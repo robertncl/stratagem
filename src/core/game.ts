@@ -523,6 +523,12 @@ export class Game {
     return TECH_LIST.filter((t) => !p.techs.includes(t.id) && t.prereqs.every((r) => p.techs.includes(r))).map((t) => t.id);
   }
 
+  /** Research cost grows 4% per city beyond the fourth, so sprawling empires pay for it. */
+  techCost(pid: number, tech: string): number {
+    const cities = this.citiesOf(pid).length;
+    return Math.round(TECHS[tech].cost * (1 + 0.04 * Math.max(0, cities - 4)));
+  }
+
   setResearch(pid: number, tech: string) {
     if (!this.availableTechs(pid).includes(tech)) return false;
     this.player(pid).research = tech;
@@ -615,7 +621,7 @@ export class Game {
     // research
     p.researchProgress += sci;
     if (p.research) {
-      const cost = TECHS[p.research].cost;
+      const cost = this.techCost(pid, p.research);
       if (p.researchProgress >= cost) {
         p.researchProgress -= cost;
         this.grantTech(pid, p.research);
@@ -661,7 +667,7 @@ export class Game {
       const u = this.createUnit(item.id, city.owner, city.tile);
       if (cityEffects(city).veteran && isMilitary(UNITS[u.type])) u.veteran = true;
       if (item.id === 'settler') city.pop--;
-      if (p.isHuman) this.log('city', `${city.name} trains a ${UNITS[item.id].name}.`, [city.owner], city.tile);
+      if (p.isHuman) this.log('city', `${city.name} trains a new ${UNITS[item.id].name}.`, [city.owner], city.tile);
       city.build = null;
     } else {
       city.buildings.push(item.id);
@@ -669,7 +675,7 @@ export class Game {
       if (b.wonder) {
         this.s.wonders[b.id] = city.id;
         this.log('wonder', `${p.name} completes the ${b.name} in ${city.name}!`, [city.owner], city.tile);
-      } else if (p.isHuman) this.log('city', `${city.name} completes a ${b.name}.`, [city.owner], city.tile);
+      } else if (p.isHuman) this.log('city', `${city.name} completes the ${b.name}.`, [city.owner], city.tile);
       city.build = null;
     }
     city.prod = Math.min(city.prod, 30);

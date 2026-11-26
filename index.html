@@ -1,0 +1,82 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="color-scheme" content="dark" />
+    <title>Stratagem — Western Europe, 1400</title>
+    <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Cpath d='M16 2 29 9.5v13L16 30 3 22.5v-13Z' fill='%23c9a24a'/%3E%3Cpath d='M10 22V13l3 2 3-4 3 4 3-2v9Z' fill='%23231a10'/%3E%3C/svg%3E" />
+  </head>
+  <body>
+    <div id="app">
+      <canvas id="map" aria-label="Game map" tabindex="0"></canvas>
+
+      <header id="topbar" hidden>
+        <div class="tb-nation"><span class="swatch" id="tb-swatch"></span><span id="tb-nation"></span></div>
+        <div class="tb-stat" title="Treasury"><span class="ico gold"></span><span id="tb-gold"></span></div>
+        <button class="tb-stat tb-research" id="tb-research" title="Research (T)"><span class="ico sci"></span><span id="tb-sci"></span></button>
+        <div class="tb-stat" id="tb-turn"></div>
+        <div class="tb-spacer"></div>
+        <button id="btn-diplomacy" title="Diplomacy (D)">Diplomacy</button>
+        <button id="btn-empire" title="Empire overview (E)">Empire</button>
+        <button id="btn-help" title="Help (H)">Help</button>
+        <button id="btn-menu" title="Menu (Esc)">Menu</button>
+      </header>
+
+      <section id="log" hidden aria-label="Event log"><ol id="log-list"></ol></section>
+      <section id="selection" hidden aria-live="polite"></section>
+      <aside id="city-panel" hidden></aside>
+
+      <div id="corner" hidden>
+        <canvas id="minimap" aria-label="Minimap"></canvas>
+        <button id="btn-endturn" class="primary">End Turn</button>
+      </div>
+
+      <div id="tooltip" hidden></div>
+      <div id="busy" hidden><div class="busy-box">The courts of Europe deliberate…</div></div>
+      <div id="toast" hidden></div>
+    </div>
+
+    <dialog id="dlg-menu" aria-labelledby="menu-title" closedby="none">
+      <h1 id="menu-title" class="title">Stratagem</h1>
+      <p class="subtitle">Western Europe · Anno Domini 1400</p>
+      <div id="menu-body"></div>
+    </dialog>
+
+    <dialog id="dlg-tech" aria-labelledby="tech-title" closedby="any" class="wide">
+      <header class="dlg-head"><h1 id="tech-title">Research</h1><button class="close" data-close aria-label="Close">✕</button></header>
+      <div id="tech-body" class="tech-tree"></div>
+    </dialog>
+
+    <dialog id="dlg-diplo" aria-labelledby="diplo-title" closedby="any" class="wide">
+      <header class="dlg-head"><h1 id="diplo-title">Diplomacy</h1><button class="close" data-close aria-label="Close">✕</button></header>
+      <div id="diplo-body"></div>
+    </dialog>
+
+    <dialog id="dlg-empire" aria-labelledby="empire-title" closedby="any" class="wide">
+      <header class="dlg-head"><h1 id="empire-title">Empire</h1><button class="close" data-close aria-label="Close">✕</button></header>
+      <div id="empire-body"></div>
+    </dialog>
+
+    <dialog id="dlg-help" aria-labelledby="help-title" closedby="any" class="wide">
+      <header class="dlg-head"><h1 id="help-title">How to play</h1><button class="close" data-close aria-label="Close">✕</button></header>
+      <div id="help-body"></div>
+    </dialog>
+
+    <dialog id="dlg-confirm" aria-labelledby="confirm-title">
+      <h1 id="confirm-title"></h1>
+      <p id="confirm-text"></p>
+      <form method="dialog" class="row-end">
+        <button value="no" id="confirm-no" autofocus>Cancel</button>
+        <button value="yes" id="confirm-yes" class="danger">Confirm</button>
+      </form>
+    </dialog>
+
+    <dialog id="dlg-over" aria-labelledby="over-title" closedby="none">
+      <h1 id="over-title" class="title"></h1>
+      <div id="over-body"></div>
+    </dialog>
+
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>
