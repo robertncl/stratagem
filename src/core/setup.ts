@@ -15,6 +15,8 @@ export interface NewGameOptions {
   maxTurns?: number;
   /** include independent minor states */
   minors?: boolean;
+  /** start with the geography of Europe already charted (default true) */
+  revealMap?: boolean;
 }
 
 function newPlayer(id: number, fields: Partial<Player> & Pick<Player, 'nation' | 'name' | 'color'>): Player {
@@ -52,7 +54,7 @@ export function createGame(opts: NewGameOptions): Game {
         color: n.color,
         isHuman: human,
         techs: [...n.startTechs],
-        explored: human ? new Array(map.tiles.length).fill(0) : null,
+        explored: human ? new Array(map.tiles.length).fill(opts.revealMap === false ? 0 : 1) : null,
         aggression: n.aggression,
       }),
     );
