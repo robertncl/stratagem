@@ -28,6 +28,21 @@ describe('setup', () => {
   });
 });
 
+describe('independent states', () => {
+  it('all spawn, even where history put two cities closer than the grid allows', () => {
+    for (const seed of [1, 2, 7]) {
+      const g = createGame({ seed, humanNation: 'france' });
+      const minors = g.s.players.filter((p) => p.isMinor);
+      expect(minors.filter((p) => !p.alive).map((p) => p.name)).toEqual([]);
+      const genoa = g.capitalOf(pid(g, 'genoa'))!;
+      const milan = g.capitalOf(pid(g, 'milan'))!;
+      expect(distance(g.map, genoa.tile, milan.tile)).toBeGreaterThanOrEqual(3);
+      expect(g.map.tiles[genoa.tile].owner).toBe(genoa.owner);
+      expect(g.map.tiles[genoa.tile].t).not.toBe('mountains');
+    }
+  });
+});
+
 describe('movement', () => {
   it('paths over land, and over sea only with Sailing', () => {
     const g = newGame();

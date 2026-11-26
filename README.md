@@ -1,7 +1,7 @@
 # Stratagem
 
 A turn-based 4X strategy game for the browser, set in Western Europe in 1400 AD.
-Pick one of eight great powers, then explore, expand, exploit and exterminate against computer-controlled rivals and 28 independent states.
+Pick one of eight great powers, then explore, expand, exploit and exterminate against computer-controlled rivals and 29 independent states.
 
 ## Play
 
