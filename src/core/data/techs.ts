@@ -8,7 +8,7 @@ export interface TechDef {
   note?: string;
 }
 
-const ERA_COST = [0, 40, 90, 170, 280, 420, 600];
+const ERA_COST = [0, 60, 190, 420, 800, 1500, 2600];
 
 const t = (id: string, name: string, era: number, prereqs: string[], note?: string): TechDef => ({
   id,

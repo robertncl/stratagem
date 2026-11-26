@@ -22,7 +22,7 @@ function combatTrait(g: Game, owner: number): number {
 export function cityDefenseBonus(g: Game, tile: number): number {
   const city = g.cityAt(tile);
   if (!city) return 0;
-  let bonus = 0.25 + Math.min(0.25, city.pop * 0.03);
+  let bonus = 0.15 + Math.min(0.25, city.pop * 0.025);
   for (const b of city.buildings) bonus += BUILDINGS[b].effects.defense ?? 0;
   return bonus;
 }
