@@ -8,7 +8,7 @@ import { TERRAIN } from './data/terrain';
 import { UNITS, isMilitary, isRanged } from './data/units';
 import { GAZETTEER } from './map/geography';
 import { lonLatToKm } from './map/mapgen';
-import { distance, hexCenter, tilesInRadius } from './hex';
+import { distance, hexCenter, neighbors, tilesInRadius } from './hex';
 import { Rng } from './rng';
 import {
   borderThreshold,
@@ -626,8 +626,11 @@ export class Game {
       if (!u.acted && u.hp < 100) {
         const tile = this.map.tiles[u.tile];
         const city = this.cityAt(u.tile);
-        const heal = city && city.owner === pid ? 25 : tile.owner === pid ? 15 : this.atWar(pid, tile.owner) ? 5 : 10;
-        u.hp = Math.min(100, u.hp + heal + (u.fortified ? 5 : 0));
+        let heal = city && city.owner === pid ? 20 : tile.owner === pid ? 15 : this.atWar(pid, tile.owner) ? 5 : 10;
+        if (u.fortified && !city) heal += 5;
+        // besieged units recover slowly
+        if (neighbors(this.map, u.tile).some((n) => this.unitsAt(n).some((o) => this.atWar(pid, o.owner) && isMilitary(UNITS[o.type])))) heal = Math.ceil(heal / 2);
+        u.hp = Math.min(100, u.hp + heal);
       }
       u.moves = UNITS[u.type].moves;
       u.acted = false;
@@ -643,7 +646,7 @@ export class Game {
     }
     if (!canBuild(this, city, item)) {
       // e.g. a wonder completed elsewhere: keep the production for the next item
-      if (item.kind === 'building' && BUILDINGS[item.id].wonder) {
+      if (p.isHuman && item.kind === 'building' && BUILDINGS[item.id].wonder) {
         this.log('wonder', `${city.name} can no longer build ${BUILDINGS[item.id].name}.`, [city.owner], city.tile);
       }
       city.build = null;
@@ -659,8 +662,7 @@ export class Game {
       if (cityEffects(city).veteran && isMilitary(UNITS[u.type])) u.veteran = true;
       if (item.id === 'settler') city.pop--;
       if (p.isHuman) this.log('city', `${city.name} trains a ${UNITS[item.id].name}.`, [city.owner], city.tile);
-      city.build = item.id === 'settler' ? null : item;
-      if (p.isHuman) city.build = null;
+      city.build = null;
     } else {
       city.buildings.push(item.id);
       const b = BUILDINGS[item.id];

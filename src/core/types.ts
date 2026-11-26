@@ -64,6 +64,8 @@ export interface Player {
   /** explored tiles (1/0), only tracked for human players */
   explored: number[] | null;
   aggression: number;
+  /** AI memory: city id it is currently trying to conquer */
+  aiTarget?: number;
   /** cumulative stats for the score screen */
   stats: { citiesFounded: number; citiesCaptured: number; unitsKilled: number; unitsLost: number };
 }

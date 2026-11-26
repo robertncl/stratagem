@@ -120,7 +120,7 @@ export function computeCityYields(g: Game, city: City): CityYields {
   const mult = difficultyMult(g, city.owner);
   prod = Math.round((prod + fx.prod) * (1 + fx.prodPct + (traits.prodPct ?? 0)) * mult);
   gold = Math.round((gold + fx.gold) * (1 + fx.goldPct + (traits.goldPct ?? 0)) * mult);
-  let sci = Math.round((1 + city.pop + fx.sci + (city.isCapital ? 2 : 0)) * (1 + fx.sciPct + (traits.sciPct ?? 0)) * mult);
+  let sci = Math.round((1 + city.pop * 0.6 + fx.sci + (city.isCapital ? 2 : 0)) * (1 + fx.sciPct + (traits.sciPct ?? 0)) * mult);
   const culture = Math.round((1 + fx.culture + (city.isCapital ? 2 : 0)) * (1 + (traits.culturePct ?? 0)));
   if (city.unrest > 0) {
     prod = 0;
