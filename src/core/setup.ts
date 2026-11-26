@@ -1,9 +1,9 @@
 // Creates a new game on the Western Europe map.
 
 import { MAJOR_NATIONS, MINOR_NATIONS } from './data/nations';
-import { distance, neighbors } from './hex';
+import { distance, hexCenter, neighbors, tilesInRadius } from './hex';
 import { Game } from './game';
-import { generateMap, nearestLandTile } from './map/mapgen';
+import { generateMap, GameMap, lonLatToKm, nearestLandTile } from './map/mapgen';
 import { TERRAIN } from './data/terrain';
 import type { Difficulty, GameState, Player } from './types';
 
@@ -120,8 +120,8 @@ export function createGame(opts: NewGameOptions): Game {
   MINOR_NATIONS.forEach((m, k) => {
     const p = players[MAJOR_NATIONS.length + k];
     if (!p) return;
-    const tile = nearestLandTile(map, m.city.lon, m.city.lat);
-    if (tile < 0 || g.s.cities.some((c) => distance(map, c.tile, tile) < 3)) {
+    const tile = minorSite(g, map, m.city.lon, m.city.lat);
+    if (tile < 0) {
       p.alive = false;
       return;
     }
@@ -140,4 +140,45 @@ export function createGame(opts: NewGameOptions): Game {
   g.refreshVisibility();
   g.log('info', `The year is ${state.startYear}. Europe awaits its masters.`, []);
   return g;
+}
+
+/**
+ * Where an independent state's city goes: its historical tile, or if that
+ * is too close to a city placed earlier (on a 40 km grid, Genoa and Milan
+ * land 2 hexes apart), the nearest free site within 2 hexes of it. A site
+ * must be unclaimed land at least 3 hexes from every city, and on the coast
+ * if the historical tile is. Mountains are used only when nothing else
+ * fits, and are levelled to hills. Returns -1 if no site fits.
+ */
+export function minorSite(g: Game, map: GameMap, lon: number, lat: number): number {
+  const home = nearestLandTile(map, lon, lat);
+  if (home < 0) return -1;
+  const coastal = (t: number) => neighbors(map, t).some((n) => TERRAIN[map.tiles[n].t].water);
+  const fits = (t: number, mountains: boolean) => {
+    const tile = map.tiles[t];
+    if (TERRAIN[tile.t].water || (tile.t === 'mountains' && !mountains)) return false;
+    if (tile.owner !== -1 && t !== home) return false;
+    return !g.s.cities.some((c) => distance(map, c.tile, t) < 3);
+  };
+  if (fits(home, false)) return home;
+  const [hx, hy] = lonLatToKm(lon, lat);
+  const wantCoast = coastal(home);
+  for (const mountains of [false, true]) {
+    let best = -1;
+    let bestD = Infinity;
+    for (const t of tilesInRadius(map, home, 2)) {
+      if (!fits(t, mountains) || coastal(t) !== wantCoast) continue;
+      const [x, y] = hexCenter(t % map.width, Math.floor(t / map.width), map.hexKm);
+      const d = Math.hypot(x - hx, y - hy);
+      if (d < bestD) {
+        bestD = d;
+        best = t;
+      }
+    }
+    if (best >= 0) {
+      if (map.tiles[best].t === 'mountains') map.tiles[best].t = 'hills';
+      return best;
+    }
+  }
+  return -1;
 }
