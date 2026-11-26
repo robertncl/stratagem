@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { createGame } from '../src/core/setup';
 import { Game } from '../src/core/game';
 import { findPath } from '../src/core/rules/movement';
-import { computeCityYields, availableBuilds } from '../src/core/rules/cities';
+import { computeCityYields, availableBuilds, chooseWorkedTiles, focusWeights, tileYield } from '../src/core/rules/cities';
 import { neighbors, distance } from '../src/core/hex';
 import { lonLatToTile, nearestLandTile } from '../src/core/map/mapgen';
 import { TERRAIN } from '../src/core/data/terrain';
@@ -91,6 +91,61 @@ describe('cities', () => {
     const fr = pid(g, 'france');
     const s = g.unitsOf(fr).find((u) => u.type === 'settler')!;
     expect(g.canFoundCity(s)).toMatch(/Too close/);
+  });
+});
+
+describe('tile working', () => {
+  it('a city focus shifts what the city produces', () => {
+    const g = newGame();
+    const paris = g.capitalOf(pid(g, 'france'))!;
+    paris.pop = 5;
+    paris.borderRadius = 2;
+    g.claimTiles(paris);
+    const by = (f: 'balanced' | 'food' | 'production' | 'gold') => {
+      g.setFocus(paris, f);
+      return computeCityYields(g, paris);
+    };
+    const balanced = by('balanced');
+    expect(paris.focus).toBeUndefined();
+    expect(by('food').food).toBeGreaterThanOrEqual(balanced.food);
+    expect(by('production').prod).toBeGreaterThanOrEqual(balanced.prod);
+    expect(by('gold').gold).toBeGreaterThanOrEqual(balanced.gold);
+    const f = by('food');
+    const p = by('production');
+    expect(f.food).toBeGreaterThan(p.food);
+    expect(p.prod).toBeGreaterThan(f.prod);
+    expect(balanced.tiles.length).toBeGreaterThanOrEqual(balanced.worked.length);
+  });
+
+  it('trades tiles for food instead of starving when it can', () => {
+    const y = (food: number, prod: number, gold: number) => ({ food, prod, gold });
+    const candidates = [
+      { t: 1, y: y(0, 1, 4) }, // silver mountain
+      { t: 2, y: y(0, 3, 0) }, // iron mountain
+      { t: 3, y: y(1, 2, 0) },
+      { t: 4, y: y(2, 0, 1) },
+      { t: 5, y: y(3, 0, 0) },
+    ];
+    const weights = focusWeights('production', 3);
+    // unconstrained: the three most productive tiles, with 1 food between them
+    const greedy = chooseWorkedTiles(candidates, 3, weights, 0, -Infinity);
+    expect(greedy.map((c) => c.t).sort()).toEqual([1, 2, 3]);
+    // needing 4 food from tiles: give up the weakest producers for food
+    const fed = chooseWorkedTiles(candidates, 3, weights, 0, 4);
+    expect(fed.reduce((s, c) => s + c.y.food, 0)).toBeGreaterThanOrEqual(4);
+    expect(fed.map((c) => c.t)).toContain(2);
+    // impossible to feed: keep the best it can do rather than loop
+    const starving = chooseWorkedTiles(candidates, 3, weights, 0, 99);
+    expect(starving.reduce((s, c) => s + c.y.food, 0)).toBe(6);
+  });
+
+  it('harbors add food to worked water tiles', () => {
+    const g = newGame();
+    const city = g.s.cities.find((c) => neighbors(g.map, c.tile).some((n) => g.map.tiles[n].t === 'coast'))!;
+    const sea = neighbors(g.map, city.tile).find((n) => g.map.tiles[n].t === 'coast')!;
+    const before = tileYield(g, sea, city).food;
+    city.buildings.push('harbor');
+    expect(tileYield(g, sea, city).food).toBe(before + 1);
   });
 });
 

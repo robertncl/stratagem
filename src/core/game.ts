@@ -25,7 +25,7 @@ import {
 } from './rules/cities';
 import { bestDefender, CombatResult, resolveCombat } from './rules/combat';
 import { enterKind, findPath, isWaterTile, moveCost, ALL_MOVES, terrainAllowed } from './rules/movement';
-import type { BuildItem, City, GameState, LogEntry, LogKind, Player, Relation, Unit } from './types';
+import type { BuildItem, City, CityFocus, GameState, LogEntry, LogKind, Player, Relation, Unit } from './types';
 
 export type AIHook = (g: Game, pid: number) => void;
 
@@ -496,6 +496,10 @@ export class Game {
     for (const other of this.s.players) if (other.id !== pid) this.relation(pid, other.id).war = false;
     this.s.proposals = this.s.proposals.filter((x) => x.from !== pid && x.to !== pid);
     this.log('war', `${p.name} has been destroyed by ${this.player(by).name}.`, [pid, by]);
+  }
+
+  setFocus(city: City, focus: CityFocus) {
+    city.focus = focus === 'balanced' ? undefined : focus;
   }
 
   setBuild(city: City, item: BuildItem | null) {

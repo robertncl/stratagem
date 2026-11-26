@@ -350,3 +350,6 @@ table.grid tr.me td { background: rgb(201 162 74 / 0.08); }
   #minimap { width: 140px; }
   .tech-tree { grid-template-columns: repeat(2, 1fr); }
 }
+.focus { display: grid; grid-template-columns: repeat(4, 1fr); gap: 4px; }
+.focus button { padding: 4px 2px; font-size: 12px; background: rgb(255 255 255 / 0.03); }
+.focus button.on { border-color: var(--gold-bright); background: #3a3524; }

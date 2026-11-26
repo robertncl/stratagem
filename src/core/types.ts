@@ -43,7 +43,11 @@ export interface City {
   founded: number;
   /** turns of resistance after conquest (no production) */
   unrest: number;
+  /** what the city favours when choosing tiles to work (absent in old saves: balanced) */
+  focus?: CityFocus;
 }
+
+export type CityFocus = 'balanced' | 'food' | 'production' | 'gold';
 
 export interface Player {
   id: number;
