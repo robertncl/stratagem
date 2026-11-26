@@ -12,6 +12,7 @@ import {
   buildCost,
   buildName,
   buyCost,
+  CITY_FOCUSES,
   computeCityYields,
   effectiveProd,
   growthThreshold,
@@ -19,7 +20,7 @@ import {
 } from '../core/rules/cities';
 import { bestDefender, previewCombat } from '../core/rules/combat';
 import { findPath, reachableThisTurn, PathStep } from '../core/rules/movement';
-import type { BuildItem, LogEntry, Unit } from '../core/types';
+import type { BuildItem, CityFocus, LogEntry, Unit } from '../core/types';
 import {
   $,
   closeDialog,
@@ -33,8 +34,10 @@ import {
   showMainMenu,
   showTech,
 } from './dialogs';
-import { Renderer, textColorFor } from './renderer';
+import { CityTileInfo, Renderer, textColorFor } from './renderer';
 import * as storage from './storage';
+
+const FOCUS_LABEL: Record<CityFocus, string> = { balanced: 'Balanced', food: 'Food', production: 'Production', gold: 'Gold' };
 
 export class App {
   game!: Game;
@@ -594,6 +597,16 @@ export class App {
     this.requestRender();
   }
 
+  /** Tiles of the open city (if it is ours), for the worked-tile overlay. */
+  private openCityTiles(): CityTileInfo[] | null {
+    if (this.cityPanel === null) return null;
+    const city = this.game.city(this.cityPanel);
+    if (!city || city.owner !== this.me) return null;
+    const y = computeCityYields(this.game, city);
+    const worked = new Set(y.worked);
+    return y.tiles.map(({ t, y: ty }) => ({ tile: t, worked: worked.has(t), ...ty }));
+  }
+
   requestRender() {
     if (this.frame) return;
     this.frame = requestAnimationFrame(() => {
@@ -605,7 +618,7 @@ export class App {
         reachable: this.reach,
         attackable: this.attackable,
         path: this.hoverPath,
-        cityTiles: null,
+        cityTiles: this.openCityTiles(),
       });
       this.renderer.drawMinimap(this.minimap);
     });
@@ -786,6 +799,9 @@ export class App {
         </div>
         <div style="margin-top:8px;font-size:12px">Growth ${city.food}/${need} ${growTurns ? `· ${growTurns} turns` : y.surplus < 0 ? '· <span class="neg">starving</span>' : '· stagnant'}</div>
         <div class="bar food"><i style="width:${Math.min(100, (city.food / need) * 100)}%"></i></div>
+        <h3>Citizens</h3>
+        <div class="focus" role="group" aria-label="City focus">${CITY_FOCUSES.map((f) => `<button data-focus="${f}" class="${(city.focus ?? 'balanced') === f ? 'on' : ''}" aria-pressed="${(city.focus ?? 'balanced') === f}">${FOCUS_LABEL[f]}</button>`).join('')}</div>
+        <div class="hint">Working ${y.worked.length} of ${y.tiles.length} tiles${y.idle ? ` · <span class="neg">${y.idle} idle: the city has outgrown its land</span>` : ''}. Worked tiles are outlined on the map.</div>
         <h3>Production</h3>
         <div class="build-current">
           ${city.build ? `<b>${buildName(city.build)}</b> <span class="muted">${city.build.kind === 'wealth' ? `+${Math.floor(y.prod / 2)} gold/turn` : `${Math.min(city.prod, cost)}/${cost} · ${turns ?? '∞'} turns`}</span>` : '<span class="neg">Nothing — choose below</span>'}
@@ -814,6 +830,8 @@ export class App {
       return;
     }
     if (!city || city.owner !== this.me) return;
+    const focus = el.closest<HTMLElement>('[data-focus]')?.dataset.focus as CityFocus | undefined;
+    if (focus) this.game.setFocus(city, focus);
     if (act === 'buy') {
       if (this.game.buy(city)) this.toast(`Purchased — ${buildName(city.build)} will be ready next turn.`);
     }

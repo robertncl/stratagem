@@ -7,7 +7,7 @@ import { UNITS, UNIT_LIST } from '../data/units';
 import { BUILDING_LIST } from '../data/buildings';
 import { neighbors, tilesInRadius } from '../hex';
 import type { Game } from '../game';
-import type { BuildItem, City } from '../types';
+import type { BuildItem, City, CityFocus } from '../types';
 
 export const WORK_RADIUS = 2;
 export const MAX_BORDER_RADIUS = 3;
@@ -36,8 +36,63 @@ export function tileYield(g: Game, tile: number, city?: City): Yield {
     gold += r.gold;
   }
   if (t.river) gold += 1;
-  if (def.water && city?.buildings.includes('harbor')) food += 1;
+  if (def.water && city) for (const b of city.buildings) food += BUILDINGS[b].effects.waterFood ?? 0;
   return { food, prod, gold };
+}
+
+export const CITY_FOCUSES: CityFocus[] = ['balanced', 'food', 'production', 'gold'];
+
+/** How much each yield is worth when a city picks tiles to work. */
+export function focusWeights(focus: CityFocus | undefined, pop: number): Yield {
+  switch (focus) {
+    case 'food':
+      return { food: 4, prod: 1.2, gold: 0.8 };
+    case 'production':
+      return { food: 1.5, prod: 3.5, gold: 1 };
+    case 'gold':
+      return { food: 1.5, prod: 1.2, gold: 3 };
+    default:
+      return { food: pop < 4 ? 3 : 2.2, prod: 2, gold: 1.3 };
+  }
+}
+
+export interface TileChoice {
+  t: number;
+  y: Yield;
+}
+
+/**
+ * Pick `pop` tiles to work: the best by the focus weights, then trade tiles
+ * for more food while the city would otherwise starve.
+ */
+export function chooseWorkedTiles(candidates: TileChoice[], pop: number, weights: Yield, foodBase: number, foodNeed: number): TileChoice[] {
+  const score = (y: Yield) => y.food * weights.food + y.prod * weights.prod + y.gold * weights.gold;
+  const sorted = [...candidates].sort((a, b) => score(b.y) - score(a.y));
+  const worked = sorted.slice(0, pop);
+  const spare = sorted.slice(pop);
+  let food = foodBase + worked.reduce((s, w) => s + w.y.food, 0);
+  while (food < foodNeed) {
+    let best: [number, number] | null = null;
+    let bestGain = 0;
+    let bestLoss = Infinity;
+    for (let i = 0; i < worked.length; i++) {
+      for (let j = 0; j < spare.length; j++) {
+        const gain = spare[j].y.food - worked[i].y.food;
+        if (gain <= 0) continue;
+        const loss = score(worked[i].y) - score(spare[j].y);
+        if (gain > bestGain || (gain === bestGain && loss < bestLoss)) {
+          best = [i, j];
+          bestGain = gain;
+          bestLoss = loss;
+        }
+      }
+    }
+    if (!best) break;
+    const [i, j] = best;
+    [worked[i], spare[j]] = [spare[j], worked[i]];
+    food += bestGain;
+  }
+  return worked;
 }
 
 export function growthThreshold(pop: number): number {
@@ -83,6 +138,10 @@ export interface CityYields {
   sci: number;
   culture: number;
   worked: number[];
+  /** every tile the city could work, with its yield */
+  tiles: TileChoice[];
+  /** citizens with no tile left to work */
+  idle: number;
 }
 
 /** Tiles the city could work: its own claimed tiles within the work radius, not occupied by enemies. */
@@ -104,19 +163,17 @@ export function computeCityYields(g: Game, city: City): CityYields {
   let gold = Math.max(1, center.gold) + (city.isCapital ? 3 : 0);
 
   const candidates = workableTiles(g, city).map((t) => ({ t, y: tileYield(g, t, city) }));
-  const foodWeight = city.pop < 4 ? 3 : 2.2;
-  candidates.sort((a, b) => {
-    const s = (y: Yield) => y.food * foodWeight + y.prod * 2 + y.gold * 1.3;
-    return s(b.y) - s(a.y);
-  });
-  const worked = candidates.slice(0, city.pop);
+  const foodMult = 1 + (traits.foodPct ?? 0);
+  // food the city needs from its worked tiles, before the trait bonus
+  const foodNeed = Math.ceil((city.pop * 2) / foodMult) - (food + fx.food);
+  const worked = chooseWorkedTiles(candidates, city.pop, focusWeights(city.focus, city.pop), 0, foodNeed);
   for (const w of worked) {
     food += w.y.food;
     prod += w.y.prod;
     gold += w.y.gold;
   }
   food += fx.food;
-  food = Math.floor(food * (1 + (traits.foodPct ?? 0)));
+  food = Math.floor(food * foodMult);
   const mult = difficultyMult(g, city.owner);
   prod = Math.round((prod + fx.prod) * (1 + fx.prodPct + (traits.prodPct ?? 0)) * mult);
   gold = Math.round((gold + fx.gold) * (1 + fx.goldPct + (traits.goldPct ?? 0)) * mult);
@@ -128,7 +185,18 @@ export function computeCityYields(g: Game, city: City): CityYields {
     sci = 0;
   }
   const foodUpkeep = city.pop * 2;
-  return { food, foodUpkeep, surplus: food - foodUpkeep, prod, gold, sci, culture, worked: worked.map((w) => w.t) };
+  return {
+    food,
+    foodUpkeep,
+    surplus: food - foodUpkeep,
+    prod,
+    gold,
+    sci,
+    culture,
+    worked: worked.map((w) => w.t),
+    tiles: candidates,
+    idle: Math.max(0, city.pop - candidates.length),
+  };
 }
 
 export function isCoastal(g: Game, tile: number): boolean {
