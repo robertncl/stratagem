@@ -605,6 +605,7 @@ export class App {
         reachable: this.reach,
         attackable: this.attackable,
         path: this.hoverPath,
+        cityTiles: null,
       });
       this.renderer.drawMinimap(this.minimap);
     });
