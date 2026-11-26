@@ -319,8 +319,9 @@ export function showHelp() {
     <div><h2>Controls</h2><ul>
       <li><b>Left-click</b> a unit or city to select it.</li>
       <li><b>Right-click</b> (or left-click empty ground while a unit is selected) to move or attack. Hover to preview the path; numbers mark where each turn ends.</li>
-      <li><b>Drag</b> to pan, <b>wheel</b> or <kbd>+</kbd>/<kbd>−</kbd> to zoom, arrow keys / <kbd>WASD</kbd> to scroll.</li>
+      <li><b>Drag</b> to pan, <b>wheel</b> or <kbd>+</kbd>/<kbd>−</kbd> to zoom, arrow keys to scroll.</li>
       <li><kbd>Space</kbd>/<kbd>N</kbd> next unit · <kbd>F</kbd> fortify · <kbd>S</kbd> sleep · <kbd>B</kbd> found city · <kbd>C</kbd> centre · <kbd>Del</kbd> disband</li>
+      <li>Click the minimap or a log entry to jump there.</li>
       <li><kbd>Enter</kbd> end turn · <kbd>T</kbd> research · <kbd>D</kbd> diplomacy · <kbd>E</kbd> empire · <kbd>Esc</kbd> deselect / menu</li>
     </ul></div>
     <div><h2>Expand &amp; exploit</h2><ul>
@@ -339,7 +340,8 @@ export function showHelp() {
       <li><b>Conquest</b>: be the last great power standing.</li>
       <li><b>Domination</b>: hold every great power's original capital.</li>
       <li><b>Enlightenment</b>: be first to research it.</li>
-      <li><b>Score</b>: highest score when 1800 AD (turn 200) arrives.</li>
+      <li><b>Score</b>: highest score when turn 200 ends (1800 AD).</li>
+      <li>You are out of the game when your last city falls.</li>
     </ul></div>
   </div>`;
   openDialog('dlg-help');
