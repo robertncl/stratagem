@@ -326,7 +326,7 @@ export function showHelp() {
     </ul></div>
     <div><h2>Expand &amp; exploit</h2><ul>
       <li>Settlers found cities (3+ tiles apart, not in foreign land). New cities take the name of the nearest real town.</li>
-      <li>Cities work their best tiles. Food grows population; production builds units, buildings and wonders; gold pays upkeep and can rush-buy.</li>
+      <li>Cities work their best tiles; set a city's focus in its panel. Citizens with no good tile become specialists (+1 production, gold and science, no food). Food grows population; production builds units, buildings and wonders; gold pays upkeep and can rush-buy.</li>
       <li>Culture pushes borders out to 2 and then 3 tiles. Rivers add gold and act as roads.</li>
       <li>Learn <b>Sailing</b> to embark onto coastal waters (a whole turn to embark/land), <b>Navigation</b> for the open sea.</li>
     </ul></div>

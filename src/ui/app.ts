@@ -16,6 +16,8 @@ import {
   computeCityYields,
   effectiveProd,
   growthThreshold,
+  SPECIALIST_SCI,
+  SPECIALIST_YIELD,
   tileYield,
 } from '../core/rules/cities';
 import { bestDefender, previewCombat } from '../core/rules/combat';
@@ -801,7 +803,7 @@ export class App {
         <div class="bar food"><i style="width:${Math.min(100, (city.food / need) * 100)}%"></i></div>
         <h3>Citizens</h3>
         <div class="focus" role="group" aria-label="City focus">${CITY_FOCUSES.map((f) => `<button data-focus="${f}" class="${(city.focus ?? 'balanced') === f ? 'on' : ''}" aria-pressed="${(city.focus ?? 'balanced') === f}">${FOCUS_LABEL[f]}</button>`).join('')}</div>
-        <div class="hint">Working ${y.worked.length} of ${y.tiles.length} tiles${y.idle ? ` · <span class="neg">${y.idle} idle: the city has outgrown its land</span>` : ''}. Worked tiles are outlined on the map.</div>
+        <div class="hint">Working ${y.worked.length} of ${y.tiles.length} tiles${y.specialists ? ` · ${y.specialists} specialist${y.specialists > 1 ? 's' : ''} (each +${SPECIALIST_YIELD.prod} prod, +${SPECIALIST_YIELD.gold} gold, +${SPECIALIST_SCI} sci, no food)` : ''}. Worked tiles are outlined on the map.</div>
         <h3>Production</h3>
         <div class="build-current">
           ${city.build ? `<b>${buildName(city.build)}</b> <span class="muted">${city.build.kind === 'wealth' ? `+${Math.floor(y.prod / 2)} gold/turn` : `${Math.min(city.prod, cost)}/${cost} · ${turns ?? '∞'} turns`}</span>` : '<span class="neg">Nothing — choose below</span>'}

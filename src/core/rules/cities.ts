@@ -56,6 +56,14 @@ export function focusWeights(focus: CityFocus | undefined, pop: number): Yield {
   }
 }
 
+/**
+ * A citizen without a tile, or with only poor tiles to choose from, works
+ * as a specialist (craftsman, trader, clerk) instead. Specialists eat like
+ * everyone else but produce no food.
+ */
+export const SPECIALIST_YIELD: Yield = { food: 0, prod: 1, gold: 1 };
+export const SPECIALIST_SCI = 1;
+
 export interface TileChoice {
   t: number;
   y: Yield;
@@ -140,8 +148,8 @@ export interface CityYields {
   worked: number[];
   /** every tile the city could work, with its yield */
   tiles: TileChoice[];
-  /** citizens with no tile left to work */
-  idle: number;
+  /** citizens working as specialists rather than on a tile */
+  specialists: number;
 }
 
 /** Tiles the city could work: its own claimed tiles within the work radius, not occupied by enemies. */
@@ -166,8 +174,12 @@ export function computeCityYields(g: Game, city: City): CityYields {
   const foodMult = 1 + (traits.foodPct ?? 0);
   // food the city needs from its worked tiles, before the trait bonus
   const foodNeed = Math.ceil((city.pop * 2) / foodMult) - (food + fx.food);
-  const worked = chooseWorkedTiles(candidates, city.pop, focusWeights(city.focus, city.pop), 0, foodNeed);
-  for (const w of worked) {
+  // every citizen may also be a specialist (t = -1); real tiles win ties
+  const choices = [...candidates, ...Array.from({ length: city.pop }, () => ({ t: -1, y: SPECIALIST_YIELD }))];
+  const chosen = chooseWorkedTiles(choices, city.pop, focusWeights(city.focus, city.pop), 0, foodNeed);
+  const worked = chosen.filter((c) => c.t >= 0);
+  const specialists = chosen.length - worked.length;
+  for (const w of chosen) {
     food += w.y.food;
     prod += w.y.prod;
     gold += w.y.gold;
@@ -177,7 +189,7 @@ export function computeCityYields(g: Game, city: City): CityYields {
   const mult = difficultyMult(g, city.owner);
   prod = Math.round((prod + fx.prod) * (1 + fx.prodPct + (traits.prodPct ?? 0)) * mult);
   gold = Math.round((gold + fx.gold) * (1 + fx.goldPct + (traits.goldPct ?? 0)) * mult);
-  let sci = Math.round((1 + city.pop * 0.6 + fx.sci + (city.isCapital ? 3 : 0)) * (1 + fx.sciPct + (traits.sciPct ?? 0)) * mult);
+  let sci = Math.round((1 + city.pop * 0.6 + specialists * SPECIALIST_SCI + fx.sci + (city.isCapital ? 3 : 0)) * (1 + fx.sciPct + (traits.sciPct ?? 0)) * mult);
   const culture = Math.round((1 + fx.culture + (city.isCapital ? 2 : 0)) * (1 + (traits.culturePct ?? 0)));
   if (city.unrest > 0) {
     prod = 0;
@@ -195,7 +207,7 @@ export function computeCityYields(g: Game, city: City): CityYields {
     culture,
     worked: worked.map((w) => w.t),
     tiles: candidates,
-    idle: Math.max(0, city.pop - candidates.length),
+    specialists,
   };
 }
 

@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { createGame } from '../src/core/setup';
 import { Game } from '../src/core/game';
 import { findPath } from '../src/core/rules/movement';
-import { computeCityYields, availableBuilds, chooseWorkedTiles, focusWeights, tileYield } from '../src/core/rules/cities';
+import { computeCityYields, availableBuilds, chooseWorkedTiles, focusWeights, SPECIALIST_YIELD, tileYield } from '../src/core/rules/cities';
 import { neighbors, distance } from '../src/core/hex';
 import { lonLatToTile, nearestLandTile } from '../src/core/map/mapgen';
 import { TERRAIN } from '../src/core/data/terrain';
@@ -137,6 +137,32 @@ describe('tile working', () => {
     // impossible to feed: keep the best it can do rather than loop
     const starving = chooseWorkedTiles(candidates, 3, weights, 0, 99);
     expect(starving.reduce((s, c) => s + c.y.food, 0)).toBe(6);
+  });
+
+  it('citizens without a good tile become specialists', () => {
+    const g = newGame();
+    const paris = g.capitalOf(pid(g, 'france'))!;
+    const tiles = computeCityYields(g, paris).tiles.length;
+    paris.pop = tiles + 2;
+    const y = computeCityYields(g, paris);
+    expect(y.specialists).toBeGreaterThanOrEqual(2);
+    expect(y.worked.length + y.specialists).toBe(paris.pop);
+    // specialists add output on top of every worked tile
+    paris.pop = tiles;
+    const full = computeCityYields(g, paris);
+    expect(y.prod).toBeGreaterThan(full.prod);
+    expect(y.sci).toBeGreaterThan(full.sci);
+  });
+
+  it('prefers a specialist to a tile that yields almost nothing', () => {
+    const y = (food: number, prod: number, gold: number) => ({ food, prod, gold });
+    const specialist = { t: -1, y: SPECIALIST_YIELD };
+    const candidates = [{ t: 1, y: y(2, 1, 0) }, { t: 2, y: y(0, 1, 0) }, specialist, specialist];
+    const worked = chooseWorkedTiles(candidates, 2, focusWeights('balanced', 2), 0, -Infinity);
+    expect(worked.map((c) => c.t).sort()).toEqual([-1, 1]);
+    // but works the poor tile over a specialist when food is short and it helps
+    const hungry = [{ t: 1, y: y(2, 1, 0) }, { t: 3, y: y(1, 0, 0) }, specialist, specialist];
+    expect(chooseWorkedTiles(hungry, 2, focusWeights('balanced', 2), 0, 3).map((c) => c.t).sort()).toEqual([1, 3]);
   });
 
   it('harbors add food to worked water tiles', () => {
