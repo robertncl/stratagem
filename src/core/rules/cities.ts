@@ -1,0 +1,214 @@
+// City economy: tile yields, worked tiles, growth and what can be built.
+
+import { BUILDINGS, BuildingEffects } from '../data/buildings';
+import { MAJOR_NATIONS, NationTraits } from '../data/nations';
+import { RESOURCES, TERRAIN } from '../data/terrain';
+import { UNITS, UNIT_LIST } from '../data/units';
+import { BUILDING_LIST } from '../data/buildings';
+import { neighbors, tilesInRadius } from '../hex';
+import type { Game } from '../game';
+import type { BuildItem, City } from '../types';
+
+export const WORK_RADIUS = 2;
+export const MAX_BORDER_RADIUS = 3;
+const traitsById = new Map(MAJOR_NATIONS.map((n) => [n.id, n.traits]));
+
+export function traitsOf(g: Game, pid: number): NationTraits {
+  return traitsById.get(g.player(pid).nation) ?? {};
+}
+
+export interface Yield {
+  food: number;
+  prod: number;
+  gold: number;
+}
+
+export function tileYield(g: Game, tile: number, city?: City): Yield {
+  const t = g.s.map.tiles[tile];
+  const def = TERRAIN[t.t];
+  let food = def.food;
+  let prod = def.prod;
+  let gold = def.gold;
+  if (t.res) {
+    const r = RESOURCES[t.res];
+    food += r.food;
+    prod += r.prod;
+    gold += r.gold;
+  }
+  if (t.river) gold += 1;
+  if (def.water && city?.buildings.includes('harbor')) food += 1;
+  return { food, prod, gold };
+}
+
+export function growthThreshold(pop: number): number {
+  return 15 + 7 * pop + Math.floor(Math.pow(pop, 1.6));
+}
+
+export function borderThreshold(radius: number): number {
+  return radius <= 1 ? 12 : radius === 2 ? 90 : Infinity;
+}
+
+export function difficultyMult(g: Game, pid: number): number {
+  const p = g.player(pid);
+  if (p.isHuman) return 1;
+  return g.s.difficulty === 'easy' ? 0.85 : g.s.difficulty === 'hard' ? 1.25 : 1;
+}
+
+export function cityEffects(city: City): Required<Omit<BuildingEffects, 'veteran'>> & { veteran: boolean } {
+  const e = { food: 0, prod: 0, gold: 0, sci: 0, culture: 0, prodPct: 0, goldPct: 0, sciPct: 0, defense: 0, waterFood: 0, militaryPct: 0, veteran: false };
+  for (const id of city.buildings) {
+    const b = BUILDINGS[id].effects;
+    e.food += b.food ?? 0;
+    e.prod += b.prod ?? 0;
+    e.gold += b.gold ?? 0;
+    e.sci += b.sci ?? 0;
+    e.culture += b.culture ?? 0;
+    e.prodPct += b.prodPct ?? 0;
+    e.goldPct += b.goldPct ?? 0;
+    e.sciPct += b.sciPct ?? 0;
+    e.defense += b.defense ?? 0;
+    e.waterFood += b.waterFood ?? 0;
+    e.militaryPct += b.militaryPct ?? 0;
+    if (b.veteran) e.veteran = true;
+  }
+  return e;
+}
+
+export interface CityYields {
+  food: number;
+  foodUpkeep: number;
+  surplus: number;
+  prod: number;
+  gold: number;
+  sci: number;
+  culture: number;
+  worked: number[];
+}
+
+/** Tiles the city could work: its own claimed tiles within the work radius, not occupied by enemies. */
+export function workableTiles(g: Game, city: City): number[] {
+  return tilesInRadius(g.s.map, city.tile, WORK_RADIUS).filter((t) => {
+    if (t === city.tile) return false;
+    const tile = g.s.map.tiles[t];
+    if (tile.owner !== city.owner || tile.city !== city.id) return false;
+    return !g.unitsAt(t).some((u) => g.atWar(u.owner, city.owner));
+  });
+}
+
+export function computeCityYields(g: Game, city: City): CityYields {
+  const fx = cityEffects(city);
+  const traits = traitsOf(g, city.owner);
+  const center = tileYield(g, city.tile, city);
+  let food = Math.max(2, center.food) + (city.isCapital ? 1 : 0);
+  let prod = Math.max(1, center.prod) + 1 + (city.isCapital ? 1 : 0);
+  let gold = Math.max(1, center.gold) + (city.isCapital ? 3 : 0);
+
+  const candidates = workableTiles(g, city).map((t) => ({ t, y: tileYield(g, t, city) }));
+  const foodWeight = city.pop < 4 ? 3 : 2.2;
+  candidates.sort((a, b) => {
+    const s = (y: Yield) => y.food * foodWeight + y.prod * 2 + y.gold * 1.3;
+    return s(b.y) - s(a.y);
+  });
+  const worked = candidates.slice(0, city.pop);
+  for (const w of worked) {
+    food += w.y.food;
+    prod += w.y.prod;
+    gold += w.y.gold;
+  }
+  food += fx.food;
+  food = Math.floor(food * (1 + (traits.foodPct ?? 0)));
+  const mult = difficultyMult(g, city.owner);
+  prod = Math.round((prod + fx.prod) * (1 + fx.prodPct + (traits.prodPct ?? 0)) * mult);
+  gold = Math.round((gold + fx.gold) * (1 + fx.goldPct + (traits.goldPct ?? 0)) * mult);
+  let sci = Math.round((1 + city.pop + fx.sci + (city.isCapital ? 2 : 0)) * (1 + fx.sciPct + (traits.sciPct ?? 0)) * mult);
+  const culture = Math.round((1 + fx.culture + (city.isCapital ? 2 : 0)) * (1 + (traits.culturePct ?? 0)));
+  if (city.unrest > 0) {
+    prod = 0;
+    gold = 0;
+    sci = 0;
+  }
+  const foodUpkeep = city.pop * 2;
+  return { food, foodUpkeep, surplus: food - foodUpkeep, prod, gold, sci, culture, worked: worked.map((w) => w.t) };
+}
+
+export function isCoastal(g: Game, tile: number): boolean {
+  return neighbors(g.s.map, tile).some((n) => {
+    const t = g.s.map.tiles[n].t;
+    return t === 'coast' || t === 'ocean';
+  });
+}
+
+export function buildCost(item: BuildItem): number {
+  if (item.kind === 'unit') return UNITS[item.id].cost;
+  if (item.kind === 'building') return BUILDINGS[item.id].cost;
+  return 0;
+}
+
+export function buildName(item: BuildItem | null): string {
+  if (!item) return 'Nothing';
+  if (item.kind === 'unit') return UNITS[item.id].name;
+  if (item.kind === 'building') return BUILDINGS[item.id].name;
+  return 'Wealth';
+}
+
+export function canBuild(g: Game, city: City, item: BuildItem): boolean {
+  const pid = city.owner;
+  if (item.kind === 'wealth') return true;
+  if (item.kind === 'unit') {
+    const def = UNITS[item.id];
+    if (!def) return false;
+    if (def.tech && !g.hasTech(pid, def.tech)) return false;
+    if (def.id === 'settler' && g.player(pid).isMinor) return false;
+    // hide units replaced by something we can build
+    for (const other of UNIT_LIST) {
+      if (other.replaces?.includes(def.id) && (!other.tech || g.hasTech(pid, other.tech))) return false;
+    }
+    return true;
+  }
+  const b = BUILDINGS[item.id];
+  if (!b || city.buildings.includes(b.id)) return false;
+  if (b.tech && !g.hasTech(pid, b.tech)) return false;
+  if (b.requires && !city.buildings.includes(b.requires)) return false;
+  if (b.coastal && !isCoastal(g, city.tile)) return false;
+  if (b.wonder) {
+    if (g.s.wonders[b.id] !== undefined) return false;
+    if (g.player(pid).isMinor) return false;
+  }
+  return true;
+}
+
+export function availableBuilds(g: Game, city: City): BuildItem[] {
+  const out: BuildItem[] = [];
+  for (const u of UNIT_LIST) {
+    const item: BuildItem = { kind: 'unit', id: u.id };
+    if (canBuild(g, city, item)) out.push(item);
+  }
+  for (const b of BUILDING_LIST) {
+    const item: BuildItem = { kind: 'building', id: b.id };
+    if (canBuild(g, city, item)) out.push(item);
+  }
+  out.push({ kind: 'wealth' });
+  return out;
+}
+
+/** Production per turn applied to a specific item (military bonus etc). */
+export function effectiveProd(g: Game, city: City, item: BuildItem | null, baseProd?: number): number {
+  const prod = baseProd ?? computeCityYields(g, city).prod;
+  if (item?.kind === 'unit' && UNITS[item.id].cls !== 'civilian') {
+    return Math.round(prod * (1 + cityEffects(city).militaryPct));
+  }
+  return prod;
+}
+
+export function buyCost(_g: Game, city: City): number | null {
+  const item = city.build;
+  if (!item || item.kind === 'wealth' || city.unrest > 0) return null;
+  if (item.kind === 'building' && BUILDINGS[item.id].wonder) return null;
+  const remaining = Math.max(0, buildCost(item) - city.prod);
+  if (remaining === 0) return null;
+  return Math.round(remaining * 2.2 + 10);
+}
+
+export function buildingUpkeep(city: City): number {
+  return city.buildings.reduce((s, b) => s + BUILDINGS[b].upkeep, 0);
+}
