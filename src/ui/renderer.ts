@@ -394,8 +394,14 @@ export class Renderer {
     todo.sort((a, b) => Math.hypot((a.cx + 0.5) * cw - mx, (a.cy + 0.5) * ch - my) - Math.hypot((b.cx + 0.5) * cw - mx, (b.cy + 0.5) * ch - my));
 
     // chunks from another zoom level can stand in for ones not rendered yet
-    const backdrop = [...cache.values()].filter((c) => c.level !== level && c.x1 > vx0 && c.x0 < vx1 && c.y1 > vy0 && c.y0 < vy1);
+    // (one level only, the one shown most recently, as levels overlap each other)
+    let backdrop = [...cache.values()].filter((c) => c.level !== level && c.x1 > vx0 && c.x0 < vx1 && c.y1 > vy0 && c.y0 < vy1);
+    if (backdrop.length) {
+      const recent = backdrop.reduce((a, b) => (b.usedFrame > a.usedFrame ? b : a)).level;
+      backdrop = backdrop.filter((c) => c.level === recent);
+    }
     let pending = false;
+    const missing: { cx: number; cy: number }[] = [];
     for (const t of todo) {
       const mustRender = !t.old && backdrop.length === 0;
       if (mustRender || performance.now() < deadline) {
@@ -403,9 +409,26 @@ export class Renderer {
       } else {
         pending = true;
         if (t.old) ready.push(t.old);
+        else missing.push(t);
       }
     }
-    if (pending && backdrop.length) for (const c of backdrop) this.blitChunk(c);
+    if (missing.length && backdrop.length) {
+      // Only where nothing at this level is drawn yet: the politics layer is
+      // translucent, so a backdrop under a finished chunk would tint twice.
+      const k = this.camera.zoom * this.dpr;
+      const ctx = this.ctx;
+      ctx.save();
+      ctx.setTransform(1, 0, 0, 1, 0, 0);
+      ctx.beginPath();
+      for (const { cx, cy } of missing) {
+        const x0 = Math.round((cx * cw - this.camera.x) * k);
+        const y0 = Math.round((cy * ch - this.camera.y) * k);
+        ctx.rect(x0, y0, Math.round(((cx + 1) * cw - this.camera.x) * k) - x0, Math.round(((cy + 1) * ch - this.camera.y) * k) - y0);
+      }
+      ctx.clip();
+      for (const c of backdrop) this.blitChunk(c);
+      ctx.restore();
+    }
     for (const c of ready) {
       this.blitChunk(c);
       cache.delete(c.key);
