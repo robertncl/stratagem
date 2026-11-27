@@ -1,7 +1,9 @@
 // Entry point of the lazily loaded 3D model code: bakes sprites on demand
 // and caches them by model and resolution.
 
+import type { ResourceId } from '../../../core/data/terrain';
 import { Baker, Sprite } from './baker';
+import { resourceModel, resourceOnWater, RESOURCE_FRAME } from './resources';
 import { unitModel, UNIT_FRAME } from './units';
 
 export type { Sprite };
@@ -67,4 +69,12 @@ export function unitSprite(type: string, team: string, embarked: boolean, ppu: n
     baker ??= new Baker();
     return baker.bake(unitModel(type, team, embarked), b, UNIT_FRAME);
   });
+}
+
+/** Resource sprites are few, so they are always baked on the spot. */
+export function resourceSprite(res: ResourceId, ppu: number): Sprite {
+  return sprite(`r:${res}`, ppu, true, (b) => {
+    baker ??= new Baker();
+    return baker.bake(resourceModel(res), b, RESOURCE_FRAME, { shadow: !resourceOnWater(res) });
+  }).sprite!;
 }
