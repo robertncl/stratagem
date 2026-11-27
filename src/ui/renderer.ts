@@ -13,7 +13,7 @@
 // frame. Chunks that are out of date are redrawn under a per-frame time budget
 // so panning and zooming stay smooth.
 
-import { TERRAIN, TerrainId } from '../core/data/terrain';
+import { ResourceId, TERRAIN, TerrainId } from '../core/data/terrain';
 import { UNITS } from '../core/data/units';
 import type { Game } from '../core/game';
 import { hexCenter, neighbor, pixelToTile, SQRT3 } from '../core/hex';
@@ -107,6 +107,10 @@ export const START_ZOOM = 1.15;
 const MODEL_ZOOM = 0.55;
 /** Size of unit models relative to the map art (1 = a man as tall as about a quarter hex). */
 const UNIT_SCALE = 1.55;
+/** Size of resource models relative to the map art. */
+const RESOURCE_SCALE = 1.6;
+/** Resources are drawn as 3D models from this many screen pixels per art unit; flat badges below. */
+const RESOURCE_MODEL_ZOOM = 0.75;
 /** Time per frame that may be spent baking model sprites. */
 const BAKE_BUDGET_MS = 12;
 
@@ -143,6 +147,8 @@ export class Renderer {
   private chunks: Record<LayerKind, Map<string, Chunk>> = { terrain: new Map(), politics: new Map() };
   private chunkPixels = 0;
   private politicsVersion = 0;
+  /** bumped when the 3D models arrive, so terrain chunks redraw with them */
+  private terrainVersion = 0;
   private frameNo = 0;
   private vignette: { w: number; h: number; g: CanvasGradient } | null = null;
   private minimapColors = new Map<string, string>();
@@ -165,6 +171,7 @@ export class Renderer {
     import('./render/three/models')
       .then((m) => {
         this.models = m;
+        this.terrainVersion++;
         this.onNeedsRedraw?.();
       })
       .catch((e) => console.warn('3D models unavailable, using flat tokens', e));
@@ -413,7 +420,7 @@ export class Renderer {
   /** Blit one cached layer, rendering missing or stale chunks. Returns true if work remains. */
   private drawLayer(kind: LayerKind, level: number, scale: number, deadline: number): boolean {
     const cache = this.chunks[kind];
-    const version = kind === 'politics' ? this.politicsVersion : 0;
+    const version = kind === 'politics' ? this.politicsVersion : this.terrainVersion;
     const cw = level * W;
     const ch = level * ROW;
     const [vx0, vy0] = this.screenToWorld(0, 0);
@@ -753,16 +760,33 @@ export class Renderer {
     // 7. rivers
     this.drawRivers(ctx, new Set(tiles));
 
-    // 8. resources
+    // 8. resources: 3D models up close, badges further out
     if (zoomEq > 0.55) {
+      const ppu = ctx.getTransform().a * RESOURCE_SCALE;
       for (const t of tiles) {
         const res = map.tiles[t].res;
         if (!res) continue;
         const [x, y] = this.art[t];
+        if (zoomEq >= RESOURCE_MODEL_ZOOM && this.drawResourceModel(ctx, res, x + 2, y + 6, ppu)) continue;
         drawResourceBadge(ctx, res, x + ART * 0.4, y + ART * 0.38);
       }
     }
     ctx.restore();
+  }
+
+  private drawResourceModel(ctx: CanvasRenderingContext2D, res: ResourceId, x: number, y: number, ppu: number): boolean {
+    if (!this.models) return false;
+    let sprite;
+    try {
+      sprite = this.models.resourceSprite(res, ppu);
+    } catch (e) {
+      console.warn('3D models failed, using flat icons', e);
+      this.models = null;
+      return false;
+    }
+    const k = RESOURCE_SCALE / sprite.ppu;
+    ctx.drawImage(sprite.canvas, x - sprite.ox * k, y - sprite.oy * k, sprite.canvas.width * k, sprite.canvas.height * k);
+    return true;
   }
 
   /** Low-frequency light and shadow so large areas don't look uniform. */
