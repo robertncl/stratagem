@@ -34,7 +34,7 @@ import {
   showMainMenu,
   showTech,
 } from './dialogs';
-import { CityTileInfo, Renderer, textColorFor } from './renderer';
+import { CityTileInfo, Renderer, START_ZOOM, textColorFor } from './renderer';
 import * as storage from './storage';
 
 const FOCUS_LABEL: Record<CityFocus, string> = { balanced: 'Balanced', food: 'Food', production: 'Production', gold: 'Gold' };
@@ -77,7 +77,7 @@ export class App {
     this.selTile = -1;
     this.closeCityPanel();
     const cap = game.capitalOf(game.humanId);
-    this.renderer.camera.zoom = 0.85;
+    this.renderer.camera.zoom = START_ZOOM;
     if (cap) this.renderer.centerOn(cap.tile);
     this.renderLog();
     this.nextUnit(false);

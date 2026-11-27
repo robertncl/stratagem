@@ -4,9 +4,8 @@
 
 import type { TerrainId } from '../../core/data/terrain';
 
-/** Texture size in pixels and the world units it covers. */
-const SIZE = 384;
-export const TEXTURE_WORLD = 192;
+/** Texture size in pixels. */
+const SIZE = 512;
 
 type RGB = [number, number, number];
 
@@ -166,10 +165,10 @@ export function terrainTextures(): Record<TerrainId, HTMLCanvasElement> {
   return cache;
 }
 
-/** Patterns for one drawing context, mapped so one texture spans TEXTURE_WORLD world units. */
-export function terrainPatterns(ctx: CanvasRenderingContext2D): Record<TerrainId, CanvasPattern> {
+/** Patterns for one drawing context, mapped so one texture spans `worldSize` world units. */
+export function terrainPatterns(ctx: CanvasRenderingContext2D, worldSize: number): Record<TerrainId, CanvasPattern> {
   const tex = terrainTextures();
-  const k = TEXTURE_WORLD / SIZE;
+  const k = worldSize / SIZE;
   const m = new DOMMatrix([k, 0, 0, k, 0, 0]);
   const out = {} as Record<TerrainId, CanvasPattern>;
   for (const id of Object.keys(tex) as TerrainId[]) {
