@@ -14,6 +14,7 @@
 // so panning and zooming stay smooth.
 
 import { ResourceId, TERRAIN, TerrainId } from '../core/data/terrain';
+import { BUILDINGS } from '../core/data/buildings';
 import { UNITS } from '../core/data/units';
 import type { Game } from '../core/game';
 import { hexCenter, neighbor, pixelToTile, SQRT3 } from '../core/hex';
@@ -107,6 +108,8 @@ export const START_ZOOM = 1.15;
 const MODEL_ZOOM = 0.55;
 /** Size of unit models relative to the map art (1 = a man as tall as about a quarter hex). */
 const UNIT_SCALE = 1.55;
+/** Size of city models relative to the map art. */
+const CITY_SCALE = 1.3;
 /** Size of resource models relative to the map art. */
 const RESOURCE_SCALE = 1.6;
 /** Resources are drawn as 3D models from this many screen pixels per art unit; flat badges below. */
@@ -391,11 +394,11 @@ export class Renderer {
     // cities, units and yield pips are drawn in art units
     ctx.save();
     ctx.scale(S, S);
+    this.bakeDeadline = performance.now() + BAKE_BUDGET_MS;
     const cities = tiles.map((t) => g.cityAt(t)).filter((c): c is City => !!c && g.isExplored(c.tile));
     for (const city of cities) this.drawCity(city);
 
     // units (visible tiles only)
-    this.bakeDeadline = performance.now() + BAKE_BUDGET_MS;
     for (const t of tiles) {
       if (human >= 0 && !g.visible[t]) continue;
       const units = g.unitsAt(t);
@@ -1369,6 +1372,8 @@ export class Renderer {
       return;
     }
 
+    if (this.drawCityModel(city, x, y, color)) return;
+
     const R = 11 + Math.min(9, city.pop * 0.75);
     const seed = city.id * 977 + g.s.seed;
     // ground
@@ -1495,6 +1500,53 @@ export class Renderer {
     if (city.isCapital) this.drawStar(x, poleTop - 5, 4.5);
 
     for (const hs of houses) if (hs[1] > keepY) drawHouse(hs);
+  }
+
+  /** A city as a 3D model on a team-coloured ground ring. False if no sprite is ready. */
+  private drawCityModel(city: City, x: number, y: number, color: string): boolean {
+    if (!this.models) return false;
+    const b = city.buildings;
+    const spec = {
+      team: color,
+      pop: city.pop,
+      capital: city.isCapital,
+      walls: b.includes('walls'),
+      castle: b.includes('castle'),
+      temple: b.includes('temple'),
+      market: b.includes('market'),
+      granary: b.includes('granary'),
+      cathedral: b.includes('notreDame') || b.includes('cluny'),
+      wonder: b.some((id) => BUILDINGS[id]?.wonder && id !== 'notreDame' && id !== 'cluny'),
+      seed: city.id * 7 + 3,
+    };
+    let res: ReturnType<Models['citySprite']>;
+    try {
+      res = this.models.citySprite(spec, this.camera.zoom * S * this.dpr * CITY_SCALE, performance.now() < this.bakeDeadline);
+    } catch (e) {
+      console.warn('3D models failed, using flat towns', e);
+      this.models = null;
+      return false;
+    }
+    if (!res.exact) this.spritesPending = true;
+    const sprite = res.sprite;
+    if (!sprite) return false;
+    const ctx = this.ctx;
+    // the town's ground disc, outlined in the owner's colour
+    const R = Math.min(ART - 2, (14 + Math.min(9, city.pop * 0.8) + (spec.walls || spec.castle ? 1.5 : 0)) * CITY_SCALE);
+    ctx.beginPath();
+    ctx.ellipse(x, y, R, R * 0.68, 0, 0, Math.PI * 2);
+    ctx.globalAlpha = 0.25;
+    ctx.fillStyle = color;
+    ctx.fill();
+    ctx.globalAlpha = 0.9;
+    ctx.lineWidth = 2;
+    ctx.strokeStyle = color;
+    ctx.stroke();
+    ctx.globalAlpha = 1;
+    const k = CITY_SCALE / sprite.ppu;
+    ctx.drawImage(sprite.canvas, x - sprite.ox * k, y - sprite.oy * k, sprite.canvas.width * k, sprite.canvas.height * k);
+    if (city.isCapital) this.drawStar(x, y - (spec.castle ? 30 : 27) * CITY_SCALE, 5);
+    return true;
   }
 
   private drawStar(x: number, y: number, r: number) {
@@ -1695,13 +1747,15 @@ export class Renderer {
 
     const [cx, cy] = this.art[tile];
     const inCity = !!g.cityAt(tile);
-    // ground point: in front of the keep in a city, a little below centre elsewhere
-    const x = inCity ? cx - 13 : cx;
-    const y = inCity ? cy + 11 : cy + 9;
+    // ground point: a little below centre, or at the front-left of a town,
+    // smaller, so the town stays in view
+    const x = inCity ? cx - 15 : cx;
+    const y = inCity ? cy + 13 : cy + 9;
+    const s = inCity ? 0.8 : 1;
 
     // team base
     ctx.beginPath();
-    ctx.ellipse(x, y, 17, 11.4, 0, 0, Math.PI * 2);
+    ctx.ellipse(x, y, 17 * s, 11.4 * s, 0, 0, Math.PI * 2);
     ctx.globalAlpha = 0.3;
     ctx.fillStyle = color;
     ctx.fill();
@@ -1711,17 +1765,17 @@ export class Renderer {
     ctx.stroke();
     if (top.fortified) {
       ctx.beginPath();
-      ctx.ellipse(x, y, 20, 13.4, 0, Math.PI * 0.05, Math.PI * 0.95);
+      ctx.ellipse(x, y, 20 * s, 13.4 * s, 0, Math.PI * 0.05, Math.PI * 0.95);
       ctx.strokeStyle = '#9fd59a';
       ctx.lineWidth = 2;
       ctx.stroke();
     }
 
-    const k = UNIT_SCALE / sprite.ppu;
+    const k = (UNIT_SCALE * s) / sprite.ppu;
     ctx.drawImage(sprite.canvas, x - sprite.ox * k, y - sprite.oy * k, sprite.canvas.width * k, sprite.canvas.height * k);
 
     // badges over the model
-    const by = y - 27;
+    const by = y - 27 * s;
     if (top.hp < 100) {
       ctx.fillStyle = 'rgba(0,0,0,0.75)';
       ctx.fillRect(x - 12, y + 13, 24, 3.6);
