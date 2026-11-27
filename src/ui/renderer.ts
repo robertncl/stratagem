@@ -23,9 +23,18 @@ import type { City, Unit } from '../core/types';
 import { drawResourceBadge, drawUnitEmblem, shieldPath } from './render/icons';
 import { terrainPatterns } from './render/textures';
 
-export const HEX = 30;
+/** Hex radius in world units. */
+export const HEX = 48;
 const W = SQRT3 * HEX;
 const ROW = 1.5 * HEX;
+/**
+ * The map art (relief, vegetation, cities, icons) is drawn for a hex of
+ * radius ART; it is scaled by S to fill the real hex.
+ */
+const ART = 30;
+const S = HEX / ART;
+/** World units covered by one repeat of a terrain texture. */
+const TEXTURE_WORLD = 192 * S;
 
 export interface CityTileInfo {
   tile: number;
@@ -87,6 +96,11 @@ const STRIPS: [depth: number, alpha: number][] = [
   [0.15, 0.45],
 ];
 
+/** Closest zoom: a hex about 120 px across its flats. */
+export const MAX_ZOOM = 2.5;
+/** Zoom a new game opens at, centred on the capital: about 15 hexes across a laptop screen. */
+export const START_ZOOM = 1.15;
+
 /** Pixel budget for all cached chunks (both layers). */
 const CHUNK_PIXEL_BUDGET = 40e6;
 /** Time per frame that may be spent redrawing out-of-date chunks. */
@@ -114,6 +128,8 @@ export class Renderer {
   private width = 0;
   private height = 0;
   private centers: [number, number][] = [];
+  /** tile centres in art units (world / S) */
+  private art: [number, number][] = [];
   private isWater: Uint8Array = new Uint8Array(0);
   private chunks: Record<LayerKind, Map<string, Chunk>> = { terrain: new Map(), politics: new Map() };
   private chunkPixels = 0;
@@ -141,6 +157,7 @@ export class Renderer {
     this.game = game;
     const map = game.map;
     this.centers = map.tiles.map((_, i) => hexCenter(i % map.width, Math.floor(i / map.width), HEX));
+    this.art = this.centers.map(([x, y]) => [x / S, y / S]);
     this.isWater = Uint8Array.from(map.tiles, (t) => (TERRAIN[t.t].water ? 1 : 0));
     for (const kind of ['terrain', 'politics'] as LayerKind[]) this.chunks[kind].clear();
     this.chunkPixels = 0;
@@ -206,8 +223,8 @@ export class Renderer {
 
   zoomAt(factor: number, sx: number, sy: number) {
     const [wx, wy] = this.screenToWorld(sx, sy);
-    const minZoom = Math.max(0.25, Math.min(this.width / this.worldWidth, this.height / this.worldHeight) * 0.9);
-    this.camera.zoom = Math.max(minZoom, Math.min(2.4, this.camera.zoom * factor));
+    const minZoom = Math.max(0.25 / S, Math.min(this.width / this.worldWidth, this.height / this.worldHeight) * 0.9);
+    this.camera.zoom = Math.max(minZoom, Math.min(MAX_ZOOM, this.camera.zoom * factor));
     this.camera.x = wx - sx / this.camera.zoom;
     this.camera.y = wy - sy / this.camera.zoom;
     this.clampCamera();
@@ -267,7 +284,7 @@ export class Renderer {
 
     // cached layers, at a zoom bucket a little sharper than the screen needs
     const scale = 2 ** (Math.ceil(Math.log2(z * this.dpr) * 3 - 1e-6) / 3);
-    const level = scale >= 1.5 ? 4 : scale >= 0.6 ? 8 : 16;
+    const level = scale * S >= 1.5 ? 4 : scale * S >= 0.6 ? 8 : 16;
     const deadline = performance.now() + FRAME_BUDGET_MS;
     let pending = this.drawLayer('terrain', level, scale, deadline);
     pending = this.drawLayer('politics', level, scale, deadline) || pending;
@@ -279,6 +296,7 @@ export class Renderer {
     ctx.setTransform(this.dpr * z, 0, 0, this.dpr * z, -this.camera.x * this.dpr * z, -this.camera.y * this.dpr * z);
 
     if (ov.cityTiles) this.drawCityTiles(ov.cityTiles, false);
+
 
     // movement overlays
     if (ov.reachable) {
@@ -340,7 +358,9 @@ export class Renderer {
       }
     }
 
-    // cities, back to front
+    // cities, units and yield pips are drawn in art units
+    ctx.save();
+    ctx.scale(S, S);
     const cities = tiles.map((t) => g.cityAt(t)).filter((c): c is City => !!c && g.isExplored(c.tile));
     for (const city of cities) this.drawCity(city);
 
@@ -352,6 +372,7 @@ export class Renderer {
     }
 
     if (ov.cityTiles) this.drawCityTiles(ov.cityTiles, true);
+    ctx.restore();
 
     // screen-space city labels
     ctx.setTransform(this.dpr, 0, 0, this.dpr, 0, 0);
@@ -463,7 +484,8 @@ export class Renderer {
     this.chunkPixels += pw * ph;
     const ctx = canvas.getContext('2d')!;
     ctx.setTransform(scale, 0, 0, scale, -x0 * scale, -y0 * scale);
-    const zoomEq = scale / this.dpr;
+    // screen pixels per art unit, which the level-of-detail thresholds use
+    const zoomEq = (scale / this.dpr) * S;
     if (kind === 'terrain') {
       const m = HEX * 1.5;
       this.drawTerrain(ctx, this.tilesInRect(x0 - m, y0 - m, x1 + m, y1 + m), zoomEq);
@@ -564,7 +586,7 @@ export class Renderer {
 
   private drawTerrain(ctx: CanvasRenderingContext2D, tiles: number[], zoomEq: number) {
     const map = this.game.map;
-    const pat = terrainPatterns(ctx);
+    const pat = terrainPatterns(ctx, TEXTURE_WORLD);
     const water = tiles.filter((t) => this.isWater[t]);
     const land = tiles.filter((t) => !this.isWater[t]);
 
@@ -611,10 +633,10 @@ export class Renderer {
     ctx.lineJoin = 'round';
     strokeCoast();
     ctx.strokeStyle = 'rgba(190,225,240,0.13)';
-    ctx.lineWidth = 11;
+    ctx.lineWidth = 11 * S;
     ctx.stroke();
     ctx.strokeStyle = 'rgba(225,242,250,0.32)';
-    ctx.lineWidth = 3.2;
+    ctx.lineWidth = 3.2 * S;
     ctx.stroke();
 
     // 3. land
@@ -643,11 +665,11 @@ export class Renderer {
       const rocky = (t: number) => map.tiles[t].t === 'hills' || map.tiles[t].t === 'mountains';
       strokeCoast((t) => !rocky(t) && map.tiles[t].t !== 'marsh');
       ctx.strokeStyle = 'rgba(226,208,150,0.9)';
-      ctx.lineWidth = 6;
+      ctx.lineWidth = 6 * S;
       ctx.stroke();
       strokeCoast(rocky);
       ctx.strokeStyle = 'rgba(92,84,72,0.9)';
-      ctx.lineWidth = 6;
+      ctx.lineWidth = 6 * S;
       ctx.stroke();
       ctx.restore();
       strokeCoast();
@@ -674,6 +696,10 @@ export class Renderer {
       ctx.stroke();
     }
 
+    // 6–8 are drawn in art units
+    ctx.save();
+    ctx.scale(S, S);
+
     // 6. relief, vegetation and other details
     if (zoomEq > 0.42) this.drawDecorations(ctx, tiles, zoomEq);
 
@@ -685,10 +711,11 @@ export class Renderer {
       for (const t of tiles) {
         const res = map.tiles[t].res;
         if (!res) continue;
-        const [x, y] = this.centers[t];
-        drawResourceBadge(ctx, res, x + HEX * 0.4, y + HEX * 0.38);
+        const [x, y] = this.art[t];
+        drawResourceBadge(ctx, res, x + ART * 0.4, y + ART * 0.38);
       }
     }
+    ctx.restore();
   }
 
   /** Low-frequency light and shadow so large areas don't look uniform. */
@@ -755,7 +782,7 @@ export class Renderer {
     const seed = this.game.s.seed;
     for (const r of map.rivers) {
       if (!r.path.some((t) => inChunk.has(t))) continue;
-      const pts: [number, number][] = r.path.map((t) => [...this.centers[t]] as [number, number]);
+      const pts: [number, number][] = r.path.map((t) => [...this.art[t]] as [number, number]);
       // run the mouth on into the sea
       const last = r.path[r.path.length - 1];
       const prev = r.path[r.path.length - 2];
@@ -764,20 +791,20 @@ export class Renderer {
       for (let d = 0; d < 6; d++) {
         const n = neighbor(map, last, d);
         if (n < 0 || !this.isWater[n]) continue;
-        const dot = (this.centers[n][0] - this.centers[last][0]) * (this.centers[last][0] - this.centers[prev][0]) + (this.centers[n][1] - this.centers[last][1]) * (this.centers[last][1] - this.centers[prev][1]);
+        const dot = (this.art[n][0] - this.art[last][0]) * (this.art[last][0] - this.art[prev][0]) + (this.art[n][1] - this.art[last][1]) * (this.art[last][1] - this.art[prev][1]);
         if (dot > bestDot) {
           bestDot = dot;
           best = n;
         }
       }
-      if (best >= 0) pts.push([(this.centers[last][0] + this.centers[best][0]) / 2, (this.centers[last][1] + this.centers[best][1]) / 2]);
+      if (best >= 0) pts.push([(this.art[last][0] + this.art[best][0]) / 2, (this.art[last][1] + this.art[best][1]) / 2]);
       // meandering midpoints
       const mids: [number, number][] = [];
       for (let i = 0; i < pts.length - 1; i++) {
         const [ax, ay] = pts[i];
         const [bx, by] = pts[i + 1];
         const len = Math.hypot(bx - ax, by - ay) || 1;
-        const j = (hash2(r.path[Math.min(i, r.path.length - 1)], 40 + i, seed) - 0.5) * HEX * 0.5;
+        const j = (hash2(r.path[Math.min(i, r.path.length - 1)], 40 + i, seed) - 0.5) * ART * 0.5;
         mids.push([(ax + bx) / 2 + (-(by - ay) / len) * j, (ay + by) / 2 + ((bx - ax) / len) * j]);
       }
       const n = mids.length;
@@ -822,7 +849,7 @@ export class Renderer {
     if (water.length && zoomEq > 0.65) {
       ctx.beginPath();
       for (const t of water) {
-        const [x, y] = this.centers[t];
+        const [x, y] = this.art[t];
         for (let k = 0; k < 2; k++) {
           if (rnd(t, 77 + k) > 0.55) continue;
           const ox = (rnd(t, 78 + k) - 0.5) * 30;
@@ -842,7 +869,7 @@ export class Renderer {
       ctx.beginPath();
       const flowers: [number, number][] = [];
       for (const t of by.grassland) {
-        const [x, y] = this.centers[t];
+        const [x, y] = this.art[t];
         for (let k = 0; k < 6; k++) {
           const ox = (rnd(t, 100 + k) - 0.5) * 40;
           const oy = (rnd(t, 110 + k) - 0.5) * 36;
@@ -871,7 +898,7 @@ export class Renderer {
       const fills: Path2D = new Path2D();
       const furrows = new Path2D();
       for (const t of by.plains) {
-        const [x, y] = this.centers[t];
+        const [x, y] = this.art[t];
         const patches = 1 + (rnd(t, 130) < 0.55 ? 1 : 0);
         for (let p = 0; p < patches; p++) {
           const px = x + (rnd(t, 131 + p) - 0.5) * 22;
@@ -905,7 +932,7 @@ export class Renderer {
       const lit = new Path2D();
       const dark = new Path2D();
       for (const t of by.desert) {
-        const [x, y] = this.centers[t];
+        const [x, y] = this.art[t];
         for (let k = 0; k < 2; k++) {
           const dx = x + (k ? 7 : -8) + (rnd(t, 150 + k) - 0.5) * 6;
           const dy = y + (k ? 7 : -3) + (rnd(t, 152 + k) - 0.5) * 6;
@@ -930,7 +957,7 @@ export class Renderer {
       const reeds = new Path2D();
       const heads = new Path2D();
       for (const t of by.marsh) {
-        const [x, y] = this.centers[t];
+        const [x, y] = this.art[t];
         for (let k = 0; k < 3; k++) {
           const px = x + (rnd(t, 160 + k) - 0.5) * 28;
           const py = y + (rnd(t, 163 + k) - 0.5) * 22;
@@ -966,7 +993,7 @@ export class Renderer {
       const dark = new Path2D();
       const rim = new Path2D();
       for (const t of by.hills) {
-        const [x, y] = this.centers[t];
+        const [x, y] = this.art[t];
         const mounds: [number, number, number, number][] = [
           [x - 8 + (rnd(t, 180) - 0.5) * 4, y + 2 + (rnd(t, 181) - 0.5) * 4, 11, 9],
           [x + 8 + (rnd(t, 182) - 0.5) * 4, y + 9 + (rnd(t, 183) - 0.5) * 3, 10, 7],
@@ -1020,7 +1047,7 @@ export class Renderer {
     const leafDark = new Path2D();
     const leafLit = new Path2D();
     for (const t of tiles) {
-      const [x, y] = this.centers[t];
+      const [x, y] = this.art[t];
       const north = Math.floor(t / map.width) / map.height;
       const pineChance = north < 0.35 ? 0.85 : north < 0.5 ? 0.5 : 0.2;
       const trees: [number, number, number, boolean][] = [];
@@ -1073,7 +1100,7 @@ export class Renderer {
 
   private drawMountain(ctx: CanvasRenderingContext2D, t: number) {
     const seed = this.game.s.seed;
-    const [x, y] = this.centers[t];
+    const [x, y] = this.art[t];
     const r = (k: number) => hash2(t, 300 + k, seed);
     const peaks: [number, number, number, number][] = [
       [x - 8 + (r(0) - 0.5) * 4, y + 6, 11, 17 + r(1) * 6],
@@ -1171,8 +1198,8 @@ export class Renderer {
         for (let d = 0; d < 6; d++) {
           const n = neighbor(map, t, d);
           if (n >= 0 && map.tiles[n].owner === owner) continue;
-          const [ax, ay] = this.corner(t, d, HEX - 2.4);
-          const [bx, by] = this.corner(t, d + 1, HEX - 2.4);
+          const [ax, ay] = this.corner(t, d, HEX - 2.4 * S);
+          const [bx, by] = this.corner(t, d + 1, HEX - 2.4 * S);
           edges.moveTo(ax, ay);
           edges.lineTo(bx, by);
         }
@@ -1249,11 +1276,11 @@ export class Renderer {
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
     for (const t of tiles) {
-      const [x, y] = this.centers[t.tile];
+      const [x, y] = this.art[t.tile];
       const items = kinds.filter(([k]) => (t[k] as number) > 0);
       const w = 10.5;
       let px = x - ((items.length - 1) * w) / 2;
-      const py = y - HEX * 0.55;
+      const py = y - ART * 0.55;
       ctx.globalAlpha = t.worked ? 1 : 0.6;
       for (const [k, bg, fg] of items) {
         ctx.beginPath();
@@ -1274,9 +1301,9 @@ export class Renderer {
   private drawCity(city: City) {
     const ctx = this.ctx;
     const g = this.game;
-    const [x, y] = this.centers[city.tile];
+    const [x, y] = this.art[city.tile];
     const color = g.player(city.owner).color;
-    const z = this.camera.zoom;
+    const z = this.camera.zoom * S;
     const walls = city.buildings.includes('walls');
     const castle = city.buildings.includes('castle');
 
@@ -1440,7 +1467,7 @@ export class Renderer {
 
   private drawCityLabel(name: string, pop: number, color: string, x: number, y: number, capital: boolean, mine: boolean) {
     const ctx = this.ctx;
-    const z = this.camera.zoom;
+    const z = this.camera.zoom * S;
     const size = Math.round(Math.max(10, Math.min(14, 11 * Math.sqrt(z))));
     ctx.font = `${mine ? 600 : 500} ${size}px 'Palatino Linotype', Palatino, Georgia, serif`;
     const tw = ctx.measureText(name).width;
@@ -1477,9 +1504,9 @@ export class Renderer {
   private drawUnits(tile: number, units: Unit[], selected: Unit | null) {
     const ctx = this.ctx;
     const g = this.game;
-    const z = this.camera.zoom;
+    const z = this.camera.zoom * S;
     const hasCity = !!g.cityAt(tile);
-    const [cx, cy] = this.centers[tile];
+    const [cx, cy] = this.art[tile];
     const sel = selected && selected.tile === tile ? selected : null;
     const top =
       sel ??
@@ -1635,7 +1662,7 @@ export class Renderer {
       if (!g.isExplored(c.tile)) continue;
       const [x, y] = this.centers[c.tile];
       ctx.fillStyle = '#fff';
-      ctx.fillRect(x - 25, y - 25, 50, 50);
+      ctx.fillRect(x - 25 * S, y - 25 * S, 50 * S, 50 * S);
     }
     const vw = this.width / this.camera.zoom;
     const vh = this.height / this.camera.zoom;
