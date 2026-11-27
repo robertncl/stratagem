@@ -90,6 +90,8 @@ src/core/            pure game logic: no DOM, runs headless
 src/ui/
   app.ts             App: input, HUD, selection, city panel, turn flow
   renderer.ts        canvas map and minimap drawing
+  render/            terrain textures, flat icons, and three/: 3D models
+                     (three.js, loaded lazily) baked into sprites for the map
   dialogs.ts         menu, new game, research, diplomacy, empire, help, game over
   storage.ts         localStorage save slots
   styles.css

@@ -23,6 +23,8 @@ import type { City, Unit } from '../core/types';
 import { drawResourceBadge, drawUnitEmblem, shieldPath } from './render/icons';
 import { terrainPatterns } from './render/textures';
 
+type Models = typeof import('./render/three/models');
+
 /** Hex radius in world units. */
 export const HEX = 48;
 const W = SQRT3 * HEX;
@@ -101,6 +103,13 @@ export const MAX_ZOOM = 2.5;
 /** Zoom a new game opens at, centred on the capital: about 15 hexes across a laptop screen. */
 export const START_ZOOM = 1.15;
 
+/** Units are drawn as 3D models from this many screen pixels per art unit (a hex about 33 px across). */
+const MODEL_ZOOM = 0.55;
+/** Size of unit models relative to the map art (1 = a man as tall as about a quarter hex). */
+const UNIT_SCALE = 1.55;
+/** Time per frame that may be spent baking model sprites. */
+const BAKE_BUDGET_MS = 12;
+
 /** Pixel budget for all cached chunks (both layers). */
 const CHUNK_PIXEL_BUDGET = 40e6;
 /** Time per frame that may be spent redrawing out-of-date chunks. */
@@ -139,6 +148,11 @@ export class Renderer {
   private minimapColors = new Map<string, string>();
   /** called when part of the map still needs redrawing in a later frame */
   onNeedsRedraw: (() => void) | null = null;
+  /** the 3D model code, once it has loaded (null if WebGL is unavailable) */
+  private models: Models | null = null;
+  private bakeDeadline = 0;
+  /** a sprite was drawn from a stand-in, or not at all, this frame */
+  private spritesPending = false;
 
   constructor(
     private canvas: HTMLCanvasElement,
@@ -146,6 +160,14 @@ export class Renderer {
   ) {
     this.ctx = canvas.getContext('2d')!;
     this.setGame(game);
+    // three.js is big, so the models load after the game is up; until then
+    // units are drawn as flat tokens
+    import('./render/three/models')
+      .then((m) => {
+        this.models = m;
+        this.onNeedsRedraw?.();
+      })
+      .catch((e) => console.warn('3D models unavailable, using flat tokens', e));
   }
 
   /** Game state changed: borders, fog and exploration must be redrawn. */
@@ -278,6 +300,7 @@ export class Renderer {
     const g = this.game;
     const z = this.camera.zoom;
     this.frameNo++;
+    this.spritesPending = false;
     ctx.setTransform(1, 0, 0, 1, 0, 0);
     ctx.fillStyle = '#0a0d12';
     ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
@@ -365,6 +388,7 @@ export class Renderer {
     for (const city of cities) this.drawCity(city);
 
     // units (visible tiles only)
+    this.bakeDeadline = performance.now() + BAKE_BUDGET_MS;
     for (const t of tiles) {
       if (human >= 0 && !g.visible[t]) continue;
       const units = g.unitsAt(t);
@@ -381,7 +405,7 @@ export class Renderer {
       this.drawCityLabel(city.name, city.pop, g.player(city.owner).color, x, y + HEX * 0.66 * z + 4, city.isCapital, city.owner === human);
     }
 
-    if (pending) this.onNeedsRedraw?.();
+    if (pending || this.spritesPending) this.onNeedsRedraw?.();
   }
 
   // ======================================================== chunk caching
@@ -1511,6 +1535,7 @@ export class Renderer {
     const top =
       sel ??
       [...units].sort((a, b) => UNITS[b.type].defense + UNITS[b.type].attack - (UNITS[a.type].defense + UNITS[a.type].attack))[0];
+    if (z >= MODEL_ZOOM && this.drawUnitModel(tile, top, units.length, !!sel)) return;
     const x = hasCity ? cx - 15 : cx;
     const y = hasCity ? cy - 11 : cy - 2;
     const color = g.player(top.owner).color;
@@ -1623,6 +1648,96 @@ export class Renderer {
       ctx.lineWidth = 0.8;
       ctx.stroke();
     }
+  }
+
+  /** The top unit of a stack as a 3D model on a team-coloured base. False if no sprite is ready. */
+  private drawUnitModel(tile: number, top: Unit, count: number, selected: boolean): boolean {
+    if (!this.models) return false;
+    const ctx = this.ctx;
+    const g = this.game;
+    const color = g.player(top.owner).color;
+    const embarked = TERRAIN[g.map.tiles[tile].t].water;
+    let res: ReturnType<Models['unitSprite']>;
+    try {
+      res = this.models.unitSprite(top.type, color, embarked, this.camera.zoom * S * this.dpr * UNIT_SCALE, performance.now() < this.bakeDeadline);
+    } catch (e) {
+      console.warn('3D models failed, using flat tokens', e);
+      this.models = null;
+      return false;
+    }
+    if (!res.exact) this.spritesPending = true;
+    const sprite = res.sprite;
+    if (!sprite) return false;
+
+    const [cx, cy] = this.art[tile];
+    const inCity = !!g.cityAt(tile);
+    // ground point: in front of the keep in a city, a little below centre elsewhere
+    const x = inCity ? cx - 13 : cx;
+    const y = inCity ? cy + 11 : cy + 9;
+
+    // team base
+    ctx.beginPath();
+    ctx.ellipse(x, y, 17, 11.4, 0, 0, Math.PI * 2);
+    ctx.globalAlpha = 0.3;
+    ctx.fillStyle = color;
+    ctx.fill();
+    ctx.globalAlpha = 1;
+    ctx.lineWidth = selected ? 2.6 : 1.6;
+    ctx.strokeStyle = selected ? '#ffd86b' : color;
+    ctx.stroke();
+    if (top.fortified) {
+      ctx.beginPath();
+      ctx.ellipse(x, y, 20, 13.4, 0, Math.PI * 0.05, Math.PI * 0.95);
+      ctx.strokeStyle = '#9fd59a';
+      ctx.lineWidth = 2;
+      ctx.stroke();
+    }
+
+    const k = UNIT_SCALE / sprite.ppu;
+    ctx.drawImage(sprite.canvas, x - sprite.ox * k, y - sprite.oy * k, sprite.canvas.width * k, sprite.canvas.height * k);
+
+    // badges over the model
+    const by = y - 27;
+    if (top.hp < 100) {
+      ctx.fillStyle = 'rgba(0,0,0,0.75)';
+      ctx.fillRect(x - 12, y + 13, 24, 3.6);
+      ctx.fillStyle = top.hp > 60 ? '#7fbf6a' : top.hp > 30 ? '#e0b84a' : '#e0675a';
+      ctx.fillRect(x - 11.5, y + 13.5, (23 * top.hp) / 100, 2.6);
+    }
+    if (count > 1) {
+      ctx.beginPath();
+      ctx.arc(x + 15, by, 6, 0, Math.PI * 2);
+      ctx.fillStyle = '#111';
+      ctx.fill();
+      ctx.strokeStyle = color;
+      ctx.lineWidth = 1.5;
+      ctx.stroke();
+      ctx.fillStyle = '#fff';
+      ctx.font = '700 8px system-ui, sans-serif';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText(String(count), x + 15, by + 0.5);
+    }
+    if (top.owner === g.humanId && top.moves > 0 && !top.fortified && !top.sleeping) {
+      ctx.beginPath();
+      ctx.arc(x - 15, by + 1, 3.2, 0, Math.PI * 2);
+      ctx.fillStyle = '#7fe07a';
+      ctx.fill();
+      ctx.strokeStyle = 'rgba(0,0,0,0.7)';
+      ctx.lineWidth = 0.8;
+      ctx.stroke();
+    }
+    if (top.sleeping) {
+      ctx.font = 'italic 700 9px system-ui, sans-serif';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.lineWidth = 2.2;
+      ctx.strokeStyle = 'rgba(0,0,0,0.8)';
+      ctx.strokeText('z', x - 12, by - 2);
+      ctx.fillStyle = '#d6e4ff';
+      ctx.fillText('z', x - 12, by - 2);
+    }
+    return true;
   }
 
   // ============================================================== minimap
