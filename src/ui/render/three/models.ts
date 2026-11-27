@@ -3,10 +3,11 @@
 
 import type { ResourceId } from '../../../core/data/terrain';
 import { Baker, Sprite } from './baker';
+import { cityModel, CitySpec, citySignature, CITY_FRAME } from './cities';
 import { resourceModel, resourceOnWater, RESOURCE_FRAME } from './resources';
 import { unitModel, UNIT_FRAME } from './units';
 
-export type { Sprite };
+export type { CitySpec, Sprite };
 
 /** Resolutions sprites are baked at, in pixels per model unit. */
 const BUCKETS = [0.75, 1, 1.5, 2, 3, 4, 6, 8];
@@ -77,4 +78,11 @@ export function resourceSprite(res: ResourceId, ppu: number): Sprite {
     baker ??= new Baker();
     return baker.bake(resourceModel(res), b, RESOURCE_FRAME, { shadow: !resourceOnWater(res) });
   }).sprite!;
+}
+
+export function citySprite(spec: CitySpec, ppu: number, bake: boolean) {
+  return sprite(`c:${citySignature(spec)}`, ppu, bake, (b) => {
+    baker ??= new Baker();
+    return baker.bake(cityModel(spec), b, CITY_FRAME);
+  });
 }
