@@ -227,6 +227,13 @@ const line = (ctx: Ctx, pts: number[]) => {
 };
 
 const EMBLEMS: Record<string, Emblem> = {
+  cross(ctx) {
+    ctx.beginPath();
+    line(ctx, [0, -6, 0, 6]);
+    line(ctx, [-4, -2.4, 4, -2.4]);
+    ctx.lineWidth = 2.2;
+    ctx.stroke();
+  },
   house(ctx) {
     ctx.beginPath();
     line(ctx, [-4.5, 5, -4.5, -0.5, 0, -5, 4.5, -0.5, 4.5, 5]);
@@ -354,6 +361,7 @@ const EMBLEMS: Record<string, Emblem> = {
 
 const UNIT_EMBLEM: Record<string, string> = {
   settler: 'house',
+  missionary: 'cross',
   scout: 'eye',
   levy: 'pitchfork',
   spearman: 'spear',

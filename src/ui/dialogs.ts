@@ -9,6 +9,8 @@ import type { Game } from '../core/game';
 import { buildCost, buildName, computeCityYields, effectiveProd } from '../core/rules/cities';
 import type { Difficulty } from '../core/types';
 import { AUTOSAVE, info, SLOTS } from './storage';
+import { faithIcon } from './render/faith';
+import { DISSENT_PROD_PCT, HOLY_CITY, RELIGION_LIST, RELIGIONS } from '../core/data/religions';
 
 export const esc = (s: string) => s.replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]!);
 
@@ -247,6 +249,7 @@ export function showDiplomacy(g: Game, h: DiploHandlers) {
     return `<tr class="${isMe ? 'me' : ''}">
       <td><span class="swatch" style="background:${p.color}"></span> ${esc(p.name)}${p.ruler ? ` <span class="muted">· ${esc(p.ruler)}</span>` : ''}</td>
       <td>${status} ${treaty}</td>
+      <td>${p.religion ? `${faithIcon(p.religion, 14)} ${RELIGIONS[p.religion].adjective}` : ''}</td>
       <td class="num">${g.citiesOf(pid).length}</td>
       <td class="num">${g.militaryStrength(pid)}</td>
       <td class="num">${g.score(pid)}</td>
@@ -254,7 +257,7 @@ export function showDiplomacy(g: Game, h: DiploHandlers) {
   };
   const majors = g.majors().filter((p) => p.alive).map((p) => p.id);
   const minors = g.s.players.filter((p) => p.isMinor && p.alive).map((p) => p.id);
-  const head = '<tr><th>Realm</th><th>Relation</th><th class="num">Cities</th><th class="num">Army</th><th class="num">Score</th><th></th></tr>';
+  const head = '<tr><th>Realm</th><th>Relation</th><th>Faith</th><th class="num">Cities</th><th class="num">Army</th><th class="num">Score</th><th></th></tr>';
   $('diplo-body').innerHTML = `
     <div class="scroll">
       <table class="grid">${head}${majors.map(row).join('')}</table>
@@ -287,7 +290,7 @@ export function showEmpire(g: Game, onCity: (id: number) => void) {
       const prod = effectiveProd(g, c, c.build, y.prod);
       const turns = c.build && c.build.kind !== 'wealth' && prod > 0 ? Math.max(1, Math.ceil((cost - c.prod) / prod)) : '';
       return `<tr data-city="${c.id}" style="cursor:pointer">
-        <td>${c.isCapital ? '★ ' : ''}${esc(c.name)}</td><td class="num">${c.pop}</td>
+        <td>${c.isCapital ? '★ ' : ''}${esc(c.name)} ${faithIcon(c.religion, 12)}${y.dissent ? ' <span class="neg" title="Dissent: not of your state religion">dissent</span>' : ''}</td><td class="num">${c.pop}</td>
         <td class="num ${y.surplus >= 0 ? 'pos' : 'neg'}">${y.surplus >= 0 ? '+' : ''}${y.surplus}</td>
         <td class="num">${y.prod}</td><td class="num">${y.gold}</td><td class="num">${y.sci}</td>
         <td>${c.build ? esc(buildName(c.build)) : '<span class="neg">— choose —</span>'} <span class="muted">${turns ? `${turns}t` : ''}</span></td>
@@ -320,7 +323,7 @@ export function showHelp() {
       <li><b>Left-click</b> a unit or city to select it.</li>
       <li><b>Right-click</b> (or left-click empty ground while a unit is selected) to move or attack. Hover to preview the path; numbers mark where each turn ends.</li>
       <li><b>Drag</b> to pan, <b>wheel</b> or <kbd>+</kbd>/<kbd>−</kbd> to zoom, arrow keys to scroll.</li>
-      <li><kbd>Space</kbd>/<kbd>N</kbd> next unit · <kbd>F</kbd> fortify · <kbd>S</kbd> sleep · <kbd>B</kbd> found city · <kbd>C</kbd> centre · <kbd>Del</kbd> disband</li>
+      <li><kbd>Space</kbd>/<kbd>N</kbd> next unit · <kbd>F</kbd> fortify · <kbd>S</kbd> sleep · <kbd>B</kbd> found city · <kbd>P</kbd> preach · <kbd>C</kbd> centre · <kbd>Del</kbd> disband</li>
       <li>Click the minimap or a log entry to jump there.</li>
       <li><kbd>Enter</kbd> end turn · <kbd>T</kbd> research · <kbd>D</kbd> diplomacy · <kbd>E</kbd> empire · <kbd>Esc</kbd> deselect / menu</li>
     </ul></div>
@@ -335,6 +338,13 @@ export function showHelp() {
       <li>Archers and siege engines shoot two tiles without retaliation; siege is doubly effective against cities.</li>
       <li>Kill every defender, then march a melee or mounted unit in to capture a city.</li>
       <li>Peace treaties last at least 10 turns.</li>
+    </ul></div>
+    <div><h2>Faith</h2><ul>
+      <li>Every city follows a faith, shown by the badge on its name: ${RELIGION_LIST.map((r) => `${faithIcon(r.id, 13)} <b>${r.name}</b> ${r.effectText}`).join(', ')}.</li>
+      <li>Your <b>state religion</b> is your capital's. Cities of another faith are in dissent: −${Math.round(DISSENT_PROD_PCT * 100)}% production, and they resist longer when conquered.</li>
+      <li>Cities press their faith on others within 6 tiles. Size, Temples and some wonders add pressure, and a city that is outweighed converts.</li>
+      <li>Holy cities (Rome, Tunis) give +${HOLY_CITY.gold} gold and +${HOLY_CITY.culture} culture, send out +${HOLY_CITY.pressure} pressure and never convert. The first great power to learn <b>Printing Press</b> starts the Reformation in its capital.</li>
+      <li>With <b>Theology</b>, cities train <b>Missionaries</b>. Next to or inside a city of another faith, press <kbd>P</kbd> to convert it at once.</li>
     </ul></div>
     <div><h2>Victory</h2><ul>
       <li><b>Conquest</b>: be the last great power standing.</li>

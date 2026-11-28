@@ -1,3 +1,4 @@
+import type { ReligionId } from './data/religions';
 import type { GameMap } from './map/mapgen';
 
 export type Difficulty = 'easy' | 'normal' | 'hard';
@@ -21,6 +22,8 @@ export interface Unit {
   acted: boolean;
   /** free-form AI bookkeeping (target tile, role…) */
   ai?: { target?: number; role?: string };
+  /** faith a missionary preaches (that of the city that trained it) */
+  religion?: ReligionId;
 }
 
 export type BuildItem = { kind: 'unit'; id: string } | { kind: 'building'; id: string } | { kind: 'wealth' };
@@ -45,6 +48,10 @@ export interface City {
   unrest: number;
   /** what the city favours when choosing tiles to work (absent in old saves: balanced) */
   focus?: CityFocus;
+  /** faith most of the city follows (absent only before religion is set up) */
+  religion?: ReligionId;
+  /** accumulated pressure from each faith; the largest wins the city over */
+  faith?: Partial<Record<ReligionId, number>>;
 }
 
 export type CityFocus = 'balanced' | 'food' | 'production' | 'gold';
@@ -68,6 +75,8 @@ export interface Player {
   /** explored tiles (1/0), only tracked for human players */
   explored: number[] | null;
   aggression: number;
+  /** state religion: the faith of the capital */
+  religion?: ReligionId;
   /** AI memory: city id it is currently trying to conquer */
   aiTarget?: number;
   /** cumulative stats for the score screen */
@@ -80,7 +89,7 @@ export interface Relation {
   since: number;
 }
 
-export type LogKind = 'info' | 'combat' | 'war' | 'peace' | 'city' | 'tech' | 'wonder' | 'victory';
+export type LogKind = 'info' | 'combat' | 'war' | 'peace' | 'city' | 'tech' | 'wonder' | 'victory' | 'religion';
 
 export interface LogEntry {
   turn: number;
@@ -112,6 +121,8 @@ export interface GameState {
   nextId: number;
   relations: Record<string, Relation>;
   wonders: Record<string, number>;
+  /** founded faiths and their holy city ids (-1: none); absent in saves from before religion */
+  religions?: Partial<Record<ReligionId, { holyCity: number; founded: number }>>;
   log: LogEntry[];
   proposals: Proposal[];
   winner: { player: number; kind: 'conquest' | 'domination' | 'score' | 'enlightenment' } | null;

@@ -1,6 +1,7 @@
 // Creates a new game on the Western Europe map.
 
-import { MAJOR_NATIONS, MINOR_NATIONS } from './data/nations';
+import { homeReligion, MAJOR_NATIONS, MINOR_NATIONS } from './data/nations';
+import { foundStartingReligions } from './rules/religion';
 import { distance, hexCenter, neighbors, tilesInRadius } from './hex';
 import { Game } from './game';
 import { generateMap, GameMap, lonLatToKm, nearestLandTile } from './map/mapgen';
@@ -35,6 +36,7 @@ function newPlayer(id: number, fields: Partial<Player> & Pick<Player, 'nation' |
     explored: null,
     aggression: 0.5,
     stats: { citiesFounded: 0, citiesCaptured: 0, unitsKilled: 0, unitsLost: 0 },
+    religion: homeReligion(fields.nation),
     ...fields,
   };
 }
@@ -90,6 +92,7 @@ export function createGame(opts: NewGameOptions): Game {
     nextId: 1,
     relations: {},
     wonders: {},
+    religions: {},
     log: [],
     proposals: [],
     winner: null,
@@ -137,6 +140,7 @@ export function createGame(opts: NewGameOptions): Game {
     }
   });
 
+  foundStartingReligions(g);
   g.refreshVisibility();
   g.log('info', `The year is ${state.startYear}. Europe awaits its masters.`, []);
   return g;

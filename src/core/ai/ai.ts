@@ -10,6 +10,7 @@ import { distance, tilesInRadius } from '../hex';
 import { availableBuilds, buyCost, canBuild, computeCityYields, isCoastal, tileYield } from '../rules/cities';
 import { bestDefender, previewCombat } from '../rules/combat';
 import { enterKind, findPath } from '../rules/movement';
+import { cannotPreach, holyReligion } from '../rules/religion';
 import type { BuildItem, City, Player, Unit } from '../types';
 
 interface Ctx {
@@ -190,8 +191,8 @@ function diplomacy(ctx: Ctx) {
     const ratio = ctx.myStrength / theirs;
     const needed = other.isMinor ? 1.6 : 1.25;
     if (ratio < needed || ctx.myStrength < 15) continue;
-    // humans are slightly more tempting targets on hard
-    const bias = other.isHuman && g.s.difficulty === 'hard' ? 1.2 : 1;
+    // humans are slightly more tempting targets on hard, and other faiths always are
+    const bias = (other.isHuman && g.s.difficulty === 'hard' ? 1.2 : 1) * (p.religion && other.religion && other.religion !== p.religion ? 1.15 : 1);
     if (!best || ratio * bias > best.ratio) best = { id: other.id, ratio: ratio * bias };
   }
   if (best) g.declareWar(pid, best.id);
@@ -234,6 +235,7 @@ function moveUnits(ctx: Ctx) {
   const { g, pid } = ctx;
   const units = g.unitsOf(pid);
   for (const u of units) if (g.unit(u.id) && u.type === 'settler') settlerTurn(ctx, u);
+  for (const u of units) if (g.unit(u.id) && u.type === 'missionary') missionaryTurn(ctx, u);
   const military = units.filter((u) => g.unit(u.id) && isMilitary(UNITS[u.type]) && UNITS[u.type].cls !== 'recon');
   for (const u of military) u.ai = undefined;
   for (const u of units) if (g.unit(u.id) && UNITS[u.type].cls === 'recon') scoutTurn(ctx, u);
@@ -528,6 +530,62 @@ function settlerTurn(ctx: Ctx, u: Unit) {
   if (g.unit(u.id) && u.tile === target && u.moves >= 0) g.foundCity(u);
 }
 
+// -------------------------------------------------------------- missionaries
+
+/** Can a missionary of `rel` hope to convert this city (ignoring where it stands)? */
+function convertible(ctx: Ctx, c: City, rel: string): boolean {
+  if (!c.religion || c.religion === rel) return false;
+  const holy = holyReligion(ctx.g, c);
+  if (holy && holy === c.religion) return false;
+  return !ctx.g.atWar(ctx.pid, c.owner);
+}
+
+/**
+ * Where to preach: our own cities of another faith first (they lose
+ * production to dissent), then nearby foreign ones. Returns a city tile or -1.
+ */
+function missionaryTarget(ctx: Ctx, from: number, rel: string, foreign: boolean): number {
+  const { g, pid } = ctx;
+  let best = -1;
+  let bestScore = Infinity;
+  for (const c of g.s.cities) {
+    if (!convertible(ctx, c, rel)) continue;
+    const mine = c.owner === pid;
+    if (!mine && (!foreign || g.player(c.owner).isHuman)) continue;
+    const d = distance(g.map, from, c.tile);
+    if (d > (mine ? 14 : 8)) continue;
+    const score = d + (mine ? 0 : 6) - c.pop * 0.5 - (c.isCapital ? 3 : 0);
+    if (score < bestScore) {
+      bestScore = score;
+      best = c.tile;
+    }
+  }
+  return best;
+}
+
+function missionaryTurn(ctx: Ctx, u: Unit) {
+  const { g } = ctx;
+  const rel = u.religion ?? ctx.p.religion;
+  if (!rel) return g.sleep(u);
+  let target = u.ai?.target;
+  const city = target !== undefined ? g.cityAt(target) : undefined;
+  if (!city || !convertible(ctx, city, rel)) {
+    target = missionaryTarget(ctx, u.tile, rel, true);
+    if (target < 0) return g.sleep(u);
+    u.ai = { target, role: 'preach' };
+  }
+  const goal = g.cityAt(target!)!;
+  if (!cannotPreach(g, u, goal)) {
+    g.preach(u, goal);
+    return;
+  }
+  if (!moveAlong(g, u, goal.tile, true)) {
+    u.ai = undefined;
+    return;
+  }
+  if (g.unit(u.id) && !cannotPreach(g, u, goal)) g.preach(u, goal);
+}
+
 // ---------------------------------------------------------------- production
 
 function production(ctx: Ctx, city: City) {
@@ -578,6 +636,16 @@ function chooseBuild(ctx: Ctx, city: City, defenders: number, desired: number): 
     bestCitySite(ctx, city.tile) >= 0
   ) {
     return { kind: 'unit', id: 'settler' };
+  }
+
+  // missionaries to win back our own cities of another faith, now and then foreign ones
+  const missionary: BuildItem = { kind: 'unit', id: 'missionary' };
+  if (city.religion && city.religion === p.religion && canBuild(g, city, missionary)) {
+    const busy = allUnits.some((u) => u.type === 'missionary') || ctx.cities.some((c) => c.build?.kind === 'unit' && c.build.id === 'missionary');
+    if (!busy) {
+      const ownTarget = missionaryTarget(ctx, city.tile, city.religion, false) >= 0;
+      if (ownTarget || (!atWar && g.rng.chance(0.08) && missionaryTarget(ctx, city.tile, city.religion, true) >= 0)) return missionary;
+    }
   }
 
   // war footing

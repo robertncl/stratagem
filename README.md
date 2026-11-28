@@ -36,8 +36,9 @@ npm run preview    # serves dist/ at http://localhost:4173
 - **Map.** About 4,600 hexes (58 × 80, each about 40 km across), generated from real geography: coastlines from Ireland to the Balkans and Tunis, the Alps, Pyrenees and Apennines, 26 rivers (they act as roads and add gold), forests, marshes and resources. New cities take the name of the nearest real town.
 - **Nations.** England, France, Castile, Portugal, the Holy Roman Empire, Burgundy, Venice and the Kalmar Union. Each starts at its historical capital with its own trait and starting tech. Scotland, Aragon, the Papal States, the Hanseatic League, the Hafsids and two dozen more are independent states you can conquer.
 - **Economy.** Each citizen works one tile within two hexes of its city, on land the city has claimed. Cities pick the tiles themselves, guided by a focus you set in the city panel (balanced, food, production or gold), and give up output for food rather than starve when they can. Opening a city outlines its worked tiles on the map and shows each tile's yields. Cities grow on food, build with production, earn gold and science, and push their borders out with culture. Gold pays unit and building upkeep and can rush-buy production.
-- **Research.** 26 technologies over six eras, from Pottery to the Enlightenment. Each city beyond your fourth makes research 4% more expensive. Technologies unlock 16 units (Levy → Cuirassier), 15 buildings and 8 world wonders, including Notre-Dame, the Arsenale di Venezia and the Medici Bank.
+- **Research.** 26 technologies over six eras, from Pottery to the Enlightenment. Each city beyond your fourth makes research 4% more expensive. Technologies unlock 17 units (Levy → Cuirassier, plus the Missionary), 15 buildings and 8 world wonders, including Notre-Dame, the Arsenale di Venezia and the Medici Bank.
 - **War.** Combat strength takes terrain, fortification, walls, veterancy and unit matchups into account. Pikes beat horse, and siege engines double against cities. Archers and siege engines shoot two tiles without retaliation. To capture a city, kill every defender, then move a melee or mounted unit in. With Sailing, units can embark onto coastal waters, and with Navigation onto the open ocean.
+- **Faith.** Every city follows Catholicism (+2 culture), Islam (+2 science) or, once the first great power learns Printing Press and starts the Reformation in its capital, Protestantism (+2 gold). Your state religion is your capital's; cities of another faith are in dissent (−20% production) and resist longer when conquered. Cities press their faith on others within 6 tiles, more so when large or with a Temple, Cluny Abbey, Notre-Dame or El Escorial, and a city that is outweighed converts. Rome and Tunis are holy cities: +3 gold, +2 culture, extra pressure, and they never convert. With Theology, cities train **Missionaries**, which convert a city of another faith next to them at once (`P`). AIs are readier to make war on realms of another faith.
 - **Diplomacy.** Declare war, sue for peace, and accept or reject AI peace offers. Peace treaties last at least 10 turns.
 - **Victory.** There are four ways to win:
   - Conquest: be the last great power standing.
@@ -59,6 +60,7 @@ npm run preview    # serves dist/ at http://localhost:4173
 | Minimap or log entry | Click to jump there |
 | `Space` / `N` | Next unit |
 | `F` / `S` / `B` | Fortify / sleep / found city |
+| `P` | Preach (Missionary) |
 | `C` | Centre on the selected unit |
 | `Del` / `Backspace` | Disband |
 | `Enter` | End turn |
@@ -82,8 +84,8 @@ src/core/            pure game logic: no DOM, runs headless
   rng.ts             seeded PRNG and noise
   map/geography.ts   Western Europe in lon/lat: coasts, ranges, rivers, towns
   map/mapgen.ts      rasterises geography onto the hex grid
-  data/              terrain, units, buildings, techs, nations
-  rules/             movement + A*, combat, city economy
+  data/              terrain, units, buildings, techs, nations, religions
+  rules/             movement + A*, combat, city economy, religion
   game.ts            Game: state, caches, actions, turn cycle, victory
   setup.ts           new-game creation
   ai/ai.ts           computer players

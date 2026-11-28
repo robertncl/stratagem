@@ -26,6 +26,7 @@ export interface UnitDef {
 
 const list: UnitDef[] = [
   { id: 'settler', name: 'Settler', abbr: 'Se', cls: 'civilian', cost: 45, attack: 0, defense: 0, moves: 2, sight: 2, description: 'Founds a new city. Costs 1 population.' },
+  { id: 'missionary', name: 'Missionary', abbr: 'Mi', cls: 'civilian', cost: 40, attack: 0, defense: 0, moves: 3, sight: 2, tech: 'theology', description: 'Carries the faith of the city that trained it. Preach next to or inside a city of another faith to convert it; the missionary is used up.' },
   { id: 'scout', name: 'Scout', abbr: 'Sc', cls: 'recon', cost: 14, attack: 2, defense: 2, moves: 3, sight: 3, description: 'Fast explorer that pays only 1 movement for any land.' },
   { id: 'levy', name: 'Levy', abbr: 'Lv', cls: 'melee', cost: 18, attack: 5, defense: 6, moves: 2, sight: 2, description: 'Peasant militia. Cheap, weak.' },
   { id: 'spearman', name: 'Spearman', abbr: 'Sp', cls: 'melee', cost: 26, attack: 6, defense: 9, moves: 2, sight: 2, tech: 'bronzeWorking', vsMounted: 1, replaces: ['levy'], description: 'Solid defender, +100% vs mounted.' },

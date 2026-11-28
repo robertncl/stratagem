@@ -20,7 +20,10 @@ import {
 } from '../core/rules/cities';
 import { bestDefender, previewCombat } from '../core/rules/combat';
 import { findPath, reachableThisTurn, PathStep } from '../core/rules/movement';
-import type { BuildItem, CityFocus, LogEntry, Unit } from '../core/types';
+import { DISSENT_PROD_PCT, RELIGIONS } from '../core/data/religions';
+import { faithShares, faithYields, holyReligion, preachTargets } from '../core/rules/religion';
+import { faithIcon } from './render/faith';
+import type { BuildItem, City, CityFocus, LogEntry, Unit } from '../core/types';
 import {
   $,
   closeDialog,
@@ -293,6 +296,9 @@ export class App {
       case 'b':
         if (u) this.unitAction('found');
         break;
+      case 'p':
+        if (u) this.unitAction('preach');
+        break;
       case 'c':
         if (u) this.renderer.centerOn(u.tile);
         break;
@@ -473,11 +479,22 @@ export class App {
     this.closeCityPanel();
   }
 
-  private unitAction(act: string) {
+  private unitAction(act: string, cityId?: number) {
     const g = this.game;
     const u = this.selectedUnit();
     if (!u) return;
     switch (act) {
+      case 'preach': {
+        if (u.type !== 'missionary') return;
+        const targets = preachTargets(g, u);
+        const city = targets.find((c) => c.id === cityId) ?? targets[0];
+        if (!city) return this.toast('Move next to a city of another faith to preach there.');
+        g.preach(u, city);
+        this.renderLog();
+        this.nextUnit(true);
+        this.refresh();
+        return;
+      }
       case 'fortify':
         g.fortify(u);
         break;
@@ -543,7 +560,7 @@ export class App {
     parts.push(`<div><span class="ico food"></span> ${y.food} &nbsp;<span class="ico prod"></span> ${y.prod} &nbsp;<span class="ico gold"></span> ${y.gold}${TERRAIN[t.t].defense ? ` &nbsp;· defence ${TERRAIN[t.t].defense > 0 ? '+' : ''}${Math.round(TERRAIN[t.t].defense * 100)}%` : ''}</div>`);
     if (t.owner >= 0) parts.push(`<div class="muted">${esc(g.player(t.owner).name)}</div>`);
     const city = g.cityAt(tile);
-    if (city) parts.push(`<div><b>${esc(city.name)}</b> (size ${city.pop})</div>`);
+    if (city) parts.push(`<div><b>${esc(city.name)}</b> (size ${city.pop})${city.religion ? ` · ${faithIcon(city.religion, 12)} ${RELIGIONS[city.religion].adjective}` : ''}</div>`);
     if (g.visible[tile] || g.humanId < 0) {
       const units = g.unitsAt(tile);
       if (units.length) {
@@ -645,6 +662,8 @@ export class App {
     const p = g.player(this.me);
     ($('tb-swatch') as HTMLElement).style.background = p.color;
     $('tb-nation').textContent = p.name;
+    $('tb-faith').innerHTML = p.religion ? `${faithIcon(p.religion, 16)}` : '';
+    $('tb-faith').title = p.religion ? `State religion: ${RELIGIONS[p.religion].name}` : '';
     const t = this.empireTotals();
     $('tb-gold').innerHTML = `${p.gold} <span class="${t.net >= 0 ? 'pos' : 'neg'}">(${t.net >= 0 ? '+' : ''}${t.net})</span>`;
     const r = p.research ? TECHS[p.research] : null;
@@ -681,6 +700,9 @@ export class App {
     const city = g.cityAt(u.tile);
     const actions: string[] = [];
     if (u.type === 'settler') actions.push(`<button class="primary" data-act="found" ${g.canFoundCity(u) ? `title="${esc(g.canFoundCity(u)!)}"` : ''}>Found city <kbd>B</kbd></button>`);
+    if (u.type === 'missionary') {
+      for (const c of preachTargets(g, u)) actions.push(`<button class="primary" data-act="preach" data-city="${c.id}">Preach in ${esc(c.name)} <kbd>P</kbd></button>`);
+    }
     if (isMilitary(def)) actions.push(`<button data-act="fortify">Fortify <kbd>F</kbd></button>`);
     actions.push(`<button data-act="sleep">Sleep <kbd>S</kbd></button>`);
     if (u.fortified || u.sleeping) actions.push(`<button data-act="wake">Wake</button>`);
@@ -691,7 +713,7 @@ export class App {
     el.innerHTML = `
       <div class="sel-head">
         <div class="token" style="background:${p.color};color:${textColorFor(p.color)}">${def.abbr}</div>
-        <div><h2>${def.name}${u.veteran ? ' ★' : ''}</h2><div class="muted" style="font-size:12px">${esc(def.description)}</div></div>
+        <div><h2>${def.name}${u.veteran ? ' ★' : ''}${u.religion ? ` ${faithIcon(u.religion, 16)}` : ''}</h2><div class="muted" style="font-size:12px">${u.religion ? `Preaches ${RELIGIONS[u.religion].name}. ` : ''}${esc(def.description)}</div></div>
       </div>
       <div class="stats">
         ${def.cls !== 'civilian' ? `<span>Attack <b>${def.attack}</b></span><span>Defence <b>${def.defense}</b></span>` : ''}
@@ -702,7 +724,7 @@ export class App {
       </div>
       <div class="actions">${actions.join('')}</div>
       ${stack.length > 1 ? `<div class="stack">${stack.map((x) => `<button data-unit="${x.id}" class="${x.id === u.id ? 'on' : ''}">${UNITS[x.type].abbr} ${x.hp < 100 ? x.hp : ''}${x.moves > 0 ? '' : ' ·'}</button>`).join('')}</div>` : ''}
-      <div class="hint">Right-click to move or attack. ${isRanged(def) ? 'Ranged units strike from two tiles away.' : ''}</div>`;
+      <div class="hint">${u.type === 'missionary' ? 'Right-click to move. Stand next to or inside a city of another faith, then preach.' : `Right-click to move or attack. ${isRanged(def) ? 'Ranged units strike from two tiles away.' : ''}`}</div>`;
     el.hidden = false;
   }
 
@@ -727,7 +749,8 @@ export class App {
       }
       return;
     }
-    if (act) this.unitAction(act);
+    const city = el.closest<HTMLElement>('[data-city]')?.dataset.city;
+    if (act) this.unitAction(act, city !== undefined ? Number(city) : undefined);
   }
 
   // ---------------------------------------------------------- city panel
@@ -759,6 +782,7 @@ export class App {
         <div class="cp-body">
           <p>Size <b>${city.pop}</b>${city.isCapital ? ' · Capital' : ''} · defenders: <b>${defenders}</b></p>
           <p>Relation: ${g.atWar(this.me, city.owner) ? '<span class="status-war">At war</span>' : '<span class="status-peace">Peace</span>'}</p>
+          ${this.faithBlock(city)}
           ${city.buildings.length ? `<h3>Known buildings</h3><div class="chips">${city.buildings.map((b) => `<span class="chip ${BUILDINGS[b].wonder ? 'wonder' : ''}">${BUILDINGS[b].name}</span>`).join('')}</div>` : ''}
         </div>`;
       el.hidden = false;
@@ -802,6 +826,8 @@ export class App {
         <h3>Citizens</h3>
         <div class="focus" role="group" aria-label="City focus">${CITY_FOCUSES.map((f) => `<button data-focus="${f}" class="${(city.focus ?? 'balanced') === f ? 'on' : ''}" aria-pressed="${(city.focus ?? 'balanced') === f}">${FOCUS_LABEL[f]}</button>`).join('')}</div>
         <div class="hint">Working ${y.worked.length} of ${y.tiles.length} tiles${y.idle ? ` · <span class="neg">${y.idle} idle: the city has outgrown its land</span>` : ''}. Worked tiles are outlined on the map.</div>
+        <h3>Faith</h3>
+        ${this.faithBlock(city)}
         <h3>Production</h3>
         <div class="build-current">
           ${city.build ? `<b>${buildName(city.build)}</b> <span class="muted">${city.build.kind === 'wealth' ? `+${Math.floor(y.prod / 2)} gold/turn` : `${Math.min(city.prod, cost)}/${cost} · ${turns ?? '∞'} turns`}</span>` : '<span class="neg">Nothing — choose below</span>'}
@@ -816,6 +842,26 @@ export class App {
         ${city.buildings.length ? `<h3>Built</h3><div class="chips">${city.buildings.map((b) => `<span class="chip ${BUILDINGS[b].wonder ? 'wonder' : ''}" title="${esc(BUILDINGS[b].description)}">${BUILDINGS[b].name}</span>`).join('')}</div>` : ''}
       </div>`;
     el.hidden = false;
+  }
+
+  /** Faith of a city: what it follows, what that gives, and how its people are split. */
+  private faithBlock(city: City): string {
+    const g = this.game;
+    if (!city.religion) return '';
+    const rel = RELIGIONS[city.religion];
+    const holy = holyReligion(g, city);
+    const mine = city.owner === this.me;
+    const fy = faithYields(g, city);
+    const gains = [fy.culture && `+${fy.culture} culture`, fy.sci && `+${fy.sci} science`, fy.gold && `+${fy.gold} gold`].filter(Boolean).join(', ');
+    const shares = faithShares(city).filter((x) => x.share >= 0.02);
+    const state = g.player(city.owner).religion;
+    const dissent = state && state !== city.religion;
+    return `<div class="faith">
+        <div>${faithIcon(city.religion, 16)} <b>${rel.name}</b>${holy ? ` · <span class="holy">holy city of ${RELIGIONS[holy].name}</span>` : ''}${mine && gains ? ` <span class="muted">· ${gains}</span>` : ''}</div>
+        ${shares.length > 1 ? `<div class="faith-bar" aria-label="Followers">${shares.map((x) => `<i style="width:${(x.share * 100).toFixed(1)}%;background:${RELIGIONS[x.religion].color}" title="${RELIGIONS[x.religion].name} ${Math.round(x.share * 100)}%"></i>`).join('')}</div>
+        <div class="faith-legend">${shares.map((x) => `<span>${faithIcon(x.religion, 11)} ${RELIGIONS[x.religion].adjective} ${Math.round(x.share * 100)}%</span>`).join('')}</div>` : ''}
+        ${dissent && mine ? `<div class="neg" style="font-size:12px">Dissent: your state religion is ${RELIGIONS[state].name}. −${Math.round(DISSENT_PROD_PCT * 100)}% production until a Missionary converts the city.</div>` : ''}
+      </div>`;
   }
 
   private onCityClick(e: MouseEvent) {
