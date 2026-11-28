@@ -227,6 +227,29 @@ const line = (ctx: Ctx, pts: number[]) => {
 };
 
 const EMBLEMS: Record<string, Emblem> = {
+  tank(ctx) {
+    ctx.beginPath();
+    ctx.roundRect(-6, 1, 12, 4.4, 2.2);
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.roundRect(-4.6, -2.6, 7, 3.6, 1);
+    ctx.fill();
+    ctx.beginPath();
+    line(ctx, [2, -1, 6.5, -2.6]);
+    ctx.lineWidth = 1.6;
+    ctx.stroke();
+  },
+  gatling(ctx) {
+    ctx.beginPath();
+    line(ctx, [-5, 1, 5.5, -2]);
+    line(ctx, [-5, 3, 5.5, 0]);
+    line(ctx, [-2, 3, -4, 6]);
+    line(ctx, [-2, 3, 0, 6]);
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.arc(-4.4, 2, 2, 0, Math.PI * 2);
+    ctx.fill();
+  },
   cross(ctx) {
     ctx.beginPath();
     line(ctx, [0, -6, 0, 6]);
@@ -362,6 +385,16 @@ const EMBLEMS: Record<string, Emblem> = {
 const UNIT_EMBLEM: Record<string, string> = {
   settler: 'house',
   missionary: 'cross',
+  rifleman: 'musket',
+  infantry: 'musket',
+  mechInfantry: 'musket',
+  cavalry: 'sword',
+  tank: 'tank',
+  modernArmor: 'tank',
+  gatlingGun: 'gatling',
+  machineGun: 'gatling',
+  artillery: 'cannon',
+  rocketArtillery: 'cannon',
   scout: 'eye',
   levy: 'pitchfork',
   spearman: 'spear',

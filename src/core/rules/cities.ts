@@ -250,6 +250,12 @@ export function canBuild(g: Game, city: City, item: BuildItem): boolean {
     if (g.s.wonders[b.id] !== undefined) return false;
     if (g.player(pid).isMinor) return false;
   }
+  if (b.project) {
+    const done = g.player(pid).projects ?? [];
+    if (g.player(pid).isMinor || done.includes(b.id)) return false;
+    if (b.needsProject && !done.includes(b.needsProject)) return false;
+    if (b.spaceship && g.player(pid).spaceship) return false;
+  }
   return true;
 }
 
@@ -279,7 +285,7 @@ export function effectiveProd(g: Game, city: City, item: BuildItem | null, baseP
 export function buyCost(_g: Game, city: City): number | null {
   const item = city.build;
   if (!item || item.kind === 'wealth' || city.unrest > 0) return null;
-  if (item.kind === 'building' && BUILDINGS[item.id].wonder) return null;
+  if (item.kind === 'building' && (BUILDINGS[item.id].wonder || BUILDINGS[item.id].project)) return null;
   const remaining = Math.max(0, buildCost(item) - city.prod);
   if (remaining === 0) return null;
   return Math.round(remaining * 2.2 + 10);

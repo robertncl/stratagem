@@ -167,6 +167,157 @@ function cannon(team: string): THREE.Group {
   return group([gun, crew, balls]);
 }
 
+// ------------------------------------------------------------ the modern age
+
+const darkMetal = () => mat(C.gunmetal, 0.4);
+
+/** A road wheel or tyre with its axle along x. */
+function tyre(r: number, w: number, at: [number, number, number]): THREE.Object3D {
+  return rod(r, w, mat(C.tyre), at, [0, 0, Math.PI / 2], 10);
+}
+
+/** A crewman standing beside a vehicle or gun, marked to ride on deck at sea. */
+function crewman(team: string, head: FigureOpts['head'], at: [number, number], turn = -0.6): THREE.Object3D {
+  const f = figure({ team, body: 'tunic', head });
+  f.position.set(at[0], 0, at[1]);
+  f.rotation.y = FACING + turn;
+  f.userData.deck = true;
+  return f;
+}
+
+/** A vehicle that rides on deck by itself. */
+function vehicle(parts: THREE.Object3D[], scale = 1): THREE.Group {
+  const v = group(parts, [0, 0, 0], [0, FACING, 0], scale);
+  v.userData.deck = true;
+  return group([v]);
+}
+
+function tank(team: string, modern: boolean): THREE.Group {
+  const hull = mat(modern ? C.sand : C.olive, 0.3);
+  const parts: THREE.Object3D[] = [];
+  // tracks with road wheels
+  for (const s of [-1, 1]) {
+    parts.push(box(2.6, 2.6, 16, mat(C.tyre), [s * 4.4, 1.5, 0]));
+    for (const z of [-5.6, -1.9, 1.9, 5.6]) parts.push(tyre(1.25, 2.8, [s * 4.4, 1.4, z]));
+    parts.push(box(2.8, 0.4, 16.4, hull, [s * 4.4, 3.0, 0]));
+  }
+  parts.push(box(6.4, 2.6, 15, hull, [0, 3.6, 0]));
+  parts.push(box(6.2, 0.5, 4.2, hull, [0, 4.0, 8.2], [-0.5, 0, 0]));
+  // team stripes along the hull
+  for (const s of [-1, 1]) parts.push(box(0.3, 1.2, 6, mat(team), [s * 5.85, 3.0, -2.4]));
+  if (modern) {
+    // wide, flat composite turret and a long smoothbore gun
+    parts.push(slab('mbtTurret', [[-3.4, -4.2], [3.4, -4.2], [3.8, 1.6], [2.2, 4.2], [-2.2, 4.2], [-3.8, 1.6]], 2.2, hull, [0, 6.0, -0.8], [Math.PI / 2, 0, 0]));
+    parts.push(rod(0.45, 13, darkMetal(), [0, 6.0, 9.4], [Math.PI / 2, 0, 0], 8));
+    parts.push(box(4.2, 0.5, 1.6, mat(team), [0, 7.2, -3.4]));
+  } else {
+    parts.push(cyl(2.9, 3.2, 2.6, hull, [0, 4.9, -0.6], undefined, 10));
+    parts.push(cyl(1.4, 1.5, 0.9, hull, [0, 7.5, -1.2], undefined, 8));
+    parts.push(rod(0.5, 8, darkMetal(), [0, 6.2, 5.6], [Math.PI / 2, 0, 0], 8));
+    parts.push(cyl(3.0, 3.0, 0.6, mat(team), [0, 6.0, -0.6], undefined, 10));
+  }
+  parts.push(pennant(team, 6, [-2.4, 6.4, -4.4], 3));
+  return vehicle(parts, 0.95);
+}
+
+function gatlingGun(team: string): THREE.Group {
+  const brass = mat(C.bronze, 0.5);
+  const barrels: THREE.Object3D[] = [];
+  for (let k = 0; k < 6; k++) {
+    const a = (k / 6) * Math.PI * 2;
+    barrels.push(rod(0.22, 7, darkMetal(), [Math.cos(a) * 0.6, 5.2 + Math.sin(a) * 0.6, 3.0], [Math.PI / 2, 0, 0], 4));
+  }
+  const gun = group([
+    box(1.2, 0.9, 9, mat(C.wood), [0, 1.8, -3.4], [-0.25, 0, 0]),
+    rod(0.35, 6.4, mat(C.iron), [0, 3.4, 0], [0, 0, Math.PI / 2]),
+    wheel(3.2, [-3.0, 3.4, 0]),
+    wheel(3.2, [3.0, 3.4, 0]),
+    box(1.8, 1.8, 3.2, brass, [0, 5.2, -1.0]),
+    cyl(0.9, 0.9, 0.5, brass, [0, 5.2, 6.6], [Math.PI / 2, 0, 0], 8),
+    box(0.3, 1.8, 0.3, mat(C.iron), [1.3, 5.6, -1.4]),
+    ...barrels,
+    pennant(team, 7, [-1.6, 3.6, -5.6], 3),
+  ]);
+  gun.rotation.y = FACING;
+  gun.position.set(-3, 0, -1);
+  return group([gun, crewman(team, 'cap', [7.4, 4])]);
+}
+
+function machineGun(team: string): THREE.Group {
+  const sand = mat('#a8946a');
+  const bags: THREE.Object3D[] = [];
+  for (let k = 0; k < 5; k++) {
+    const a = -0.9 + k * 0.45;
+    bags.push(ball(1, sand, [Math.sin(a) * 6, 1.0, Math.cos(a) * 6], [1.9, 0.9, 1.2], 0));
+    if (k > 0 && k < 4) bags.push(ball(1, sand, [Math.sin(a) * 6, 2.5, Math.cos(a) * 6], [1.8, 0.8, 1.1], 0));
+  }
+  const gun = group([
+    ...bags,
+    rod(0.2, 5, darkMetal(), [-1, 2.2, 1.6], [0.4, 0, 0.4], 4),
+    rod(0.2, 5, darkMetal(), [1, 2.2, 1.6], [0.4, 0, -0.4], 4),
+    rod(0.2, 5, darkMetal(), [0, 2.2, -0.4], [-0.5, 0, 0], 4),
+    box(1.4, 1.6, 4, darkMetal(), [0, 4.6, 1.6]),
+    rod(0.45, 5.6, mat(C.olive), [0, 4.7, 6.0], [Math.PI / 2, 0, 0], 8),
+    box(1.6, 0.8, 1.2, mat(team), [0, 5.7, 0.8]),
+  ]);
+  gun.rotation.y = FACING;
+  gun.position.set(-2, 0, 0);
+  return group([gun, crewman(team, 'steelhelmet', [-4.6, -4], -0.2), crewman(team, 'steelhelmet', [6.6, 3.6])]);
+}
+
+function fieldGun(team: string): THREE.Group {
+  const steel = mat('#4c5446', 0.3);
+  const gun = group([
+    box(1.2, 0.9, 10, steel, [0, 1.7, -4.2], [-0.24, 0, 0]),
+    rod(0.4, 7, mat(C.iron), [0, 3.4, 0.6], [0, 0, Math.PI / 2]),
+    wheel(3.4, [-3.2, 3.4, 0.6], mat(C.woodDark)),
+    wheel(3.4, [3.2, 3.4, 0.6], mat(C.woodDark)),
+    box(6.2, 4.4, 0.35, steel, [0, 5.0, 2.2], [-0.12, 0, 0]),
+    box(1.6, 1.6, 4, steel, [0, 4.8, 0.2]),
+    rod(0.55, 10, steel, [0, 5.2, 6.4], [Math.PI / 2 - 0.08, 0, 0], 8),
+    box(6.3, 0.9, 0.4, mat(team), [0, 6.8, 2.0], [-0.12, 0, 0]),
+  ]);
+  gun.rotation.y = FACING;
+  gun.position.set(-3, 0, -1);
+  return group([gun, crewman(team, 'cap', [7.4, 4.4])]);
+}
+
+function rocketArtillery(team: string): THREE.Group {
+  const body = mat(C.olive, 0.3);
+  const parts: THREE.Object3D[] = [];
+  for (const z of [-5.2, -1.4, 5.6]) for (const s of [-1, 1]) parts.push(tyre(1.7, 1.4, [s * 3.4, 1.7, z]));
+  parts.push(box(6, 1.2, 15, mat(C.gunmetal), [0, 2.6, 0]));
+  // cab with team doors
+  parts.push(box(6.2, 4.2, 4.2, body, [0, 5.0, 5.4]));
+  parts.push(box(5.6, 1.6, 0.3, mat('#9ab4c4', 0.8), [0, 6.0, 7.55]));
+  for (const s of [-1, 1]) parts.push(box(0.3, 1.8, 2.4, mat(team), [s * 3.15, 4.6, 5.2]));
+  // launcher: a box of tubes, raised toward the front
+  const tubes: THREE.Object3D[] = [box(5.4, 3.0, 9, body, [0, 0, 0])];
+  for (const x of [-1.8, 0, 1.8]) for (const y of [-0.7, 0.7]) tubes.push(cyl(0.55, 0.55, 0.4, mat(C.dark), [x, y, 4.5], [Math.PI / 2, 0, 0], 8));
+  parts.push(group(tubes, [0, 6.4, -2.6], [-0.45, 0, 0]));
+  parts.push(box(5.6, 0.6, 1.4, mat(team), [0, 8.8, -5.0], [-0.45, 0, 0]));
+  return vehicle(parts, 0.95);
+}
+
+function mechInfantry(team: string): THREE.Group {
+  const hull = mat(C.olive, 0.3);
+  const parts: THREE.Object3D[] = [];
+  for (const z of [-5, -1.7, 1.7, 5]) for (const s of [-1, 1]) parts.push(tyre(1.6, 1.4, [s * 3.8, 1.6, z]));
+  parts.push(box(7, 3.6, 14, hull, [0, 4.0, -0.4]));
+  parts.push(box(6.8, 0.5, 4.4, hull, [0, 4.6, 7.4], [-0.75, 0, 0]));
+  parts.push(box(6.0, 0.6, 12, hull, [0, 6.0, -1]));
+  parts.push(cyl(1.6, 1.8, 1.4, hull, [0, 6.2, 0.6], undefined, 8));
+  parts.push(rod(0.25, 5, darkMetal(), [0, 7.0, 4.4], [Math.PI / 2, 0, 0], 6));
+  for (const s of [-1, 1]) parts.push(box(0.3, 1.4, 6, mat(team), [s * 3.55, 4.4, -2.6]));
+  parts.push(pennant(team, 5, [-2.4, 6.2, -6], 3));
+  const apc = vehicle(parts, 0.9);
+  apc.position.set(-2.4, 0, -2);
+  const soldier = figure({ team, body: 'tunic', head: 'steelhelmet', right: 'rifle' });
+  soldier.position.set(6.4, 0, 5.4);
+  soldier.rotation.y = FACING;
+  return group([apc, soldier]);
+}
+
 const BUILDERS: Record<string, (team: string) => THREE.Object3D> = {
   settler,
   missionary: (team) =>
@@ -190,6 +341,16 @@ const BUILDERS: Record<string, (team: string) => THREE.Object3D> = {
   catapult,
   trebuchet,
   cannon,
+  rifleman: (team) => foot(TRIO, { team, body: 'coat', head: 'shako', right: 'rifle' }),
+  infantry: (team) => foot(TRIO, { team, body: 'tunic', head: 'steelhelmet', right: 'rifle' }),
+  cavalry: (team) => squad(PAIR, () => rider({ coat: C.horseDark, saddle: team }, { team, body: 'coat', head: 'shako', right: 'sabre' })),
+  artillery: fieldGun,
+  gatlingGun,
+  machineGun,
+  tank: (team) => tank(team, false),
+  modernArmor: (team) => tank(team, true),
+  rocketArtillery,
+  mechInfantry,
 };
 
 /** A cog with a team sail, carrying a small figure of the unit. */

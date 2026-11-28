@@ -42,6 +42,17 @@ const list: UnitDef[] = [
   { id: 'musketeer', name: 'Musketeer', abbr: 'Mu', cls: 'melee', cost: 80, attack: 21, defense: 22, moves: 2, sight: 2, tech: 'gunpowder', replaces: ['levy', 'spearman', 'pikeman', 'swordsman', 'manAtArms'], description: 'Gunpowder infantry.' },
   { id: 'cannon', name: 'Cannon', abbr: 'Cn', cls: 'siege', cost: 95, attack: 6, defense: 7, ranged: 26, range: 2, moves: 2, sight: 2, tech: 'metallurgy', vsCity: 1, replaces: ['catapult', 'trebuchet'], description: 'Breaks any wall.' },
   { id: 'cuirassier', name: 'Cuirassier', abbr: 'Cu', cls: 'mounted', cost: 100, attack: 27, defense: 16, moves: 3, sight: 2, tech: 'militaryScience', replaces: ['horseman', 'knight'], description: 'Armoured pistol cavalry.' },
+  // Industrial and modern
+  { id: 'rifleman', name: 'Rifleman', abbr: 'Ri', cls: 'melee', cost: 110, attack: 30, defense: 32, moves: 2, sight: 2, tech: 'rifling', replaces: ['musketeer'], description: 'Line infantry with rifled muskets.' },
+  { id: 'artillery', name: 'Artillery', abbr: 'At', cls: 'siege', cost: 130, attack: 8, defense: 10, ranged: 40, range: 2, moves: 2, sight: 2, tech: 'chemistry', vsCity: 1, replaces: ['cannon'], description: 'Field guns firing explosive shells, +100% vs cities.' },
+  { id: 'cavalry', name: 'Cavalry', abbr: 'Cv', cls: 'mounted', cost: 140, attack: 40, defense: 24, moves: 3, sight: 2, tech: 'conscription', replaces: ['cuirassier'], description: 'Sabre-armed horsemen.' },
+  { id: 'infantry', name: 'Infantry', abbr: 'In', cls: 'melee', cost: 160, attack: 45, defense: 48, moves: 2, sight: 2, tech: 'conscription', replaces: ['rifleman'], description: 'Conscript riflemen in steel helmets.' },
+  { id: 'gatlingGun', name: 'Gatling Gun', abbr: 'Ga', cls: 'ranged', cost: 150, attack: 14, defense: 30, ranged: 34, range: 2, moves: 2, sight: 2, tech: 'machineTools', replaces: ['crossbowman'], description: 'Hand-cranked rapid fire. A stout defender.' },
+  { id: 'tank', name: 'Tank', abbr: 'Tk', cls: 'mounted', cost: 240, attack: 70, defense: 50, moves: 3, sight: 2, tech: 'combustion', replaces: ['cavalry'], description: 'Armoured breakthrough vehicle.' },
+  { id: 'machineGun', name: 'Machine Gun', abbr: 'MG', cls: 'ranged', cost: 220, attack: 20, defense: 48, ranged: 55, range: 2, moves: 2, sight: 2, tech: 'automaticWeapons', replaces: ['gatlingGun'], description: 'Belt-fed fire that holds any line.' },
+  { id: 'rocketArtillery', name: 'Rocket Artillery', abbr: 'RA', cls: 'siege', cost: 320, attack: 15, defense: 20, ranged: 85, range: 3, moves: 2, sight: 2, tech: 'rocketry', vsCity: 1, replaces: ['artillery'], description: 'Truck-mounted rockets that strike 3 tiles away, +100% vs cities.' },
+  { id: 'mechInfantry', name: 'Mechanized Infantry', abbr: 'MI', cls: 'melee', cost: 320, attack: 72, defense: 80, moves: 3, sight: 2, tech: 'mobileTactics', replaces: ['infantry'], description: 'Infantry in armoured carriers.' },
+  { id: 'modernArmor', name: 'Modern Armor', abbr: 'MB', cls: 'mounted', cost: 400, attack: 110, defense: 80, moves: 4, sight: 2, tech: 'composites', replaces: ['tank'], description: 'Main battle tank with composite armour.' },
 ];
 
 export const UNITS: Record<string, UnitDef> = Object.fromEntries(list.map((u) => [u.id, u]));

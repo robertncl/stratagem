@@ -23,6 +23,7 @@ import { findPath, reachableThisTurn, PathStep } from '../core/rules/movement';
 import { DISSENT_PROD_PCT, RELIGIONS } from '../core/data/religions';
 import { faithShares, faithYields, holyReligion, preachTargets } from '../core/rules/religion';
 import { faithIcon } from './render/faith';
+import { spaceStatus } from '../core/rules/space';
 import type { BuildItem, City, CityFocus, LogEntry, Unit } from '../core/types';
 import {
   $,
@@ -831,8 +832,9 @@ export class App {
       return `<button data-build="${key}" class="${on ? 'on' : ''}"><span class="bname">${buildName(b)}${b.kind === 'building' && BUILDINGS[b.id].wonder ? ' ★' : ''}</span><span class="bturns">${b.kind === 'wealth' ? '' : `${c} · ${t}`}</span><span class="bdesc">${esc(desc)}${stats}</span></button>`;
     };
     const units = items.filter((b) => b.kind === 'unit');
-    const buildings = items.filter((b) => b.kind === 'building' && !BUILDINGS[b.id].wonder);
+    const buildings = items.filter((b) => b.kind === 'building' && !BUILDINGS[b.id].wonder && !BUILDINGS[b.id].project);
     const wonders = items.filter((b) => b.kind === 'building' && BUILDINGS[b.id].wonder);
+    const projects = items.filter((b) => b.kind === 'building' && BUILDINGS[b.id].project);
     const wealth = items.filter((b) => b.kind === 'wealth');
     el.innerHTML = `
       <div class="cp-head"><h2>${city.isCapital ? '★ ' : ''}${esc(city.name)}<div class="sub">Size ${city.pop} · founded ${g.year(city.founded)} AD${city.unrest ? ` · <span class="neg">unrest ${city.unrest} turns</span>` : ''}</div></h2>
@@ -862,6 +864,7 @@ export class App {
         <h3>Units</h3><div class="build-list">${units.map(itemRow).join('')}</div>
         ${buildings.length ? `<h3>Buildings</h3><div class="build-list">${buildings.map(itemRow).join('')}</div>` : ''}
         ${wonders.length ? `<h3>World wonders</h3><div class="build-list">${wonders.map(itemRow).join('')}</div>` : ''}
+        ${projects.length || spaceStatus(g, this.me) ? `<h3>National projects</h3>${spaceStatus(g, this.me) ? `<div class="hint space">${spaceStatus(g, this.me)}</div>` : ''}<div class="build-list">${projects.map(itemRow).join('')}</div>` : ''}
         <h3>Other</h3><div class="build-list">${wealth.map(itemRow).join('')}</div>
         ${city.buildings.length ? `<h3>Built</h3><div class="chips">${city.buildings.map((b) => `<span class="chip ${BUILDINGS[b].wonder ? 'wonder' : ''}" title="${esc(BUILDINGS[b].description)}">${BUILDINGS[b].name}</span>`).join('')}</div>` : ''}
       </div>`;

@@ -8,6 +8,9 @@ import { generateMap, GameMap, lonLatToKm, nearestLandTile } from './map/mapgen'
 import { TERRAIN } from './data/terrain';
 import type { Difficulty, GameState, Player } from './types';
 
+/** Turn 325 ends in 2050 AD. */
+export const MAX_TURNS = 325;
+
 export interface NewGameOptions {
   seed?: number;
   /** nation id the human plays, or null for an all-AI game */
@@ -82,7 +85,7 @@ export function createGame(opts: NewGameOptions): Game {
     seed,
     rng: seed ^ 0x9e3779b9,
     turn: 1,
-    maxTurns: opts.maxTurns ?? 200,
+    maxTurns: opts.maxTurns ?? MAX_TURNS,
     startYear: 1400,
     difficulty: opts.difficulty ?? 'normal',
     map,

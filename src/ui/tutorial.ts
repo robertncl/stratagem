@@ -143,7 +143,7 @@ const STEPS: Step[] = [
   {
     title: 'Paths to victory',
     body: () =>
-      `<p>Win by <b>Conquest</b> (outlast every great power), <b>Domination</b> (hold every original capital), <b>Enlightenment</b> (research it first) or <b>Score</b> (lead when turn 200 ends, in 1800 AD).</p>
+      `<p>Win by <b>Conquest</b> (outlast every great power), <b>Domination</b> (hold every original capital), <b>Space</b> (be first to land a colony ship on a new world) or <b>Score</b> (lead when the last turn ends, in 2050 AD).</p>
        <p>Press ${kbd('H')} for help at any time, and ${kbd('Esc')} for the menu. The realm is yours. Good luck!</p>`,
     glow: 'btn-help',
   },

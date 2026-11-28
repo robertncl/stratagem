@@ -79,6 +79,10 @@ export interface Player {
   aggression: number;
   /** state religion: the faith of the capital */
   religion?: ReligionId;
+  /** national projects finished (Apollo Program, colony ship parts) */
+  projects?: string[];
+  /** colony ship in flight */
+  spaceship?: { launched: number; arrives: number } | null;
   /** AI memory: city id it is currently trying to conquer */
   aiTarget?: number;
   /** cumulative stats for the score screen */
@@ -127,5 +131,6 @@ export interface GameState {
   religions?: Partial<Record<ReligionId, { holyCity: number; founded: number }>>;
   log: LogEntry[];
   proposals: Proposal[];
-  winner: { player: number; kind: 'conquest' | 'domination' | 'score' | 'enlightenment' } | null;
+  /** 'enlightenment' only in saves from before the tree reached the Space Age */
+  winner: { player: number; kind: 'conquest' | 'domination' | 'score' | 'space' | 'enlightenment' } | null;
 }
