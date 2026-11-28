@@ -9,11 +9,22 @@ export interface NationTraits {
   combatPct?: number;
 }
 
+/** The historic figure who leads a great power, whatever the year in the game. */
+export interface LeaderDef {
+  name: string;
+  /** what they were, e.g. "Queen of England" */
+  title: string;
+  /** reign, or lifetime for leaders who never reigned */
+  years: string;
+  /** one or two sentences shown on the realm selection screen */
+  bio: string;
+}
+
 export interface NationDef {
   id: string;
   name: string;
   adjective: string;
-  ruler: string;
+  leader: LeaderDef;
   color: string;
   capital: { name: string; lon: number; lat: number };
   startTechs: string[];
@@ -27,49 +38,57 @@ export interface NationDef {
 
 export const MAJOR_NATIONS: NationDef[] = [
   {
-    id: 'england', name: 'Kingdom of England', adjective: 'English', ruler: 'Henry IV', color: '#c62828',
+    id: 'england', name: 'Kingdom of England', adjective: 'English', color: '#c62828',
+    leader: { name: 'Elizabeth I', title: 'Queen of England', years: 'reigned 1558–1603', bio: 'The Virgin Queen saw off the Spanish Armada, and her sea dogs carried English trade and privateers across the oceans.' },
     capital: { name: 'London', lon: -0.13, lat: 51.5 }, startTechs: ['sailing'], traits: { goldPct: 0.15 },
     traitText: 'Island trade: +15% gold, starts with Sailing.', aggression: 0.55,
     cityNames: ['Winchester', 'Salisbury', 'Bath', 'Hereford', 'Ipswich', 'Kendal'],
   },
   {
-    id: 'france', name: 'Kingdom of France', adjective: 'French', ruler: 'Charles VI', color: '#2456c9',
+    id: 'france', name: 'Kingdom of France', adjective: 'French', color: '#2456c9',
+    leader: { name: 'Louis XIV', title: 'King of France', years: 'reigned 1643–1715', bio: "The Sun King ruled for 72 years from Versailles. His court set the fashion of Europe, and his armies redrew France's frontiers." },
     capital: { name: 'Paris', lon: 2.35, lat: 48.86 }, startTechs: ['masonry'], traits: { prodPct: 0.1, culturePct: 0.25 },
     traitText: 'Grandeur: +10% production, +25% culture, starts with Masonry.', aggression: 0.6,
     cityNames: ['Beauvais', 'Laon', 'Soissons', 'Blois', 'Vézelay', 'Arras'],
   },
   {
-    id: 'castile', name: 'Crown of Castile', adjective: 'Castilian', ruler: 'Henry III', color: '#e9be00',
+    id: 'castile', name: 'Crown of Castile', adjective: 'Castilian', color: '#e9be00',
+    leader: { name: 'Isabella I', title: 'Queen of Castile', years: 'reigned 1474–1504', bio: 'She completed the Reconquista with the fall of Granada, united Spain with Aragon by marriage, and sent Columbus west.' },
     capital: { name: 'Toledo', lon: -4.02, lat: 39.86 }, startTechs: ['horsebackRiding'], traits: { combatPct: 0.1 },
     traitText: 'Reconquista: +10% combat strength, starts with Horseback Riding.', aggression: 0.7,
     cityNames: ['Ávila', 'Plasencia', 'Medina', 'Trujillo', 'Talavera', 'Úbeda'],
   },
   {
-    id: 'portugal', name: 'Kingdom of Portugal', adjective: 'Portuguese', ruler: 'John I', color: '#2e8b3e',
+    id: 'portugal', name: 'Kingdom of Portugal', adjective: 'Portuguese', color: '#2e8b3e',
+    leader: { name: 'Henry the Navigator', title: 'Infante of Portugal, Duke of Viseu', years: 'lived 1394–1460', bio: "The prince who sent caravels ever further down the African coast, opening Portugal's age of discovery." },
     capital: { name: 'Lisbon', lon: -9.14, lat: 38.72 }, startTechs: ['sailing'], traits: { goldPct: 0.2, sciPct: 0.1 },
     traitText: 'Age of Discovery: +20% gold, +10% science, starts with Sailing.', aggression: 0.35,
     cityNames: ['Tomar', 'Lagos', 'Setúbal', 'Silves', 'Elvas', 'Aveiro'],
   },
   {
-    id: 'hre', name: 'Holy Roman Empire', adjective: 'Imperial', ruler: 'Wenceslaus', color: '#e07a10',
+    id: 'hre', name: 'Holy Roman Empire', adjective: 'Imperial', color: '#e07a10',
+    leader: { name: 'Charles V', title: 'Holy Roman Emperor', years: 'reigned 1519–1556', bio: 'Heir to the Habsburg, Burgundian and Spanish crowns, he ruled an empire on which the sun never set, and fought the Reformation for a generation.' },
     capital: { name: 'Prague', lon: 14.42, lat: 50.08 }, startTechs: ['bronzeWorking'], traits: { prodPct: 0.15 },
     traitText: 'Imperial estates: +15% production, starts with Bronze Working.', aggression: 0.55,
     cityNames: ['Eger', 'Tábor', 'Znaim', 'Iglau', 'Kolin', 'Leitmeritz'],
   },
   {
-    id: 'burgundy', name: 'Duchy of Burgundy', adjective: 'Burgundian', ruler: 'Philip the Bold', color: '#7b1fa2',
+    id: 'burgundy', name: 'Duchy of Burgundy', adjective: 'Burgundian', color: '#7b1fa2',
+    leader: { name: 'Philip the Good', title: 'Duke of Burgundy', years: 'reigned 1419–1467', bio: 'Founder of the Order of the Golden Fleece, he made Burgundy the richest and most splendid court of the age, a rival to kings.' },
     capital: { name: 'Dijon', lon: 5.04, lat: 47.32 }, startTechs: ['pottery'], traits: { goldPct: 0.1, culturePct: 0.25 },
     traitText: 'Court splendour: +10% gold, +25% culture, starts with Pottery.', aggression: 0.5,
     cityNames: ['Beaune', 'Autun', 'Mâcon', 'Chalon', 'Dole', 'Semur'],
   },
   {
-    id: 'venice', name: 'Republic of Venice', adjective: 'Venetian', ruler: 'Doge Michele Steno', color: '#00a3a3',
+    id: 'venice', name: 'Republic of Venice', adjective: 'Venetian', color: '#00a3a3',
+    leader: { name: 'Francesco Foscari', title: 'Doge of Venice', years: 'reigned 1423–1457', bio: 'The longest-serving doge, he turned the Serenissima from the sea toward the mainland and won Venice an empire across northern Italy.' },
     capital: { name: 'Venice', lon: 12.33, lat: 45.44 }, startTechs: ['sailing'], traits: { goldPct: 0.25 },
     traitText: 'Serenissima: +25% gold, starts with Sailing.', aggression: 0.4,
     cityNames: ['Chioggia', 'Treviso', 'Vicenza', 'Rovigo', 'Belluno', 'Feltre'],
   },
   {
-    id: 'denmark', name: 'Kalmar Union', adjective: 'Danish', ruler: 'Margaret I', color: '#e05a8a',
+    id: 'denmark', name: 'Kalmar Union', adjective: 'Danish', color: '#e05a8a',
+    leader: { name: 'Margaret I', title: 'Queen of Denmark, Norway and Sweden', years: 'reigned 1375–1412', bio: 'She united the three Nordic crowns in the Kalmar Union and ruled them as one of the ablest monarchs of her age.' },
     capital: { name: 'Copenhagen', lon: 12.57, lat: 55.68 }, startTechs: ['sailing'], traits: { combatPct: 0.1, foodPct: 0.1 },
     traitText: 'Northern union: +10% combat, +10% food, starts with Sailing.', aggression: 0.6,
     cityNames: ['Helsingør', 'Køge', 'Nyborg', 'Randers', 'Horsens', 'Svendborg'],

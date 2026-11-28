@@ -52,7 +52,7 @@ export function createGame(opts: NewGameOptions): Game {
         nation: n.id,
         name: n.name,
         adjective: n.adjective,
-        ruler: n.ruler,
+        ruler: n.leader.name,
         color: n.color,
         isHuman: human,
         techs: [...n.startTechs],

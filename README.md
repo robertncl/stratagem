@@ -36,7 +36,7 @@ npm run preview    # serves dist/ at http://localhost:4173
 ## The game
 
 - **Map.** About 4,600 hexes (58 × 80, each about 40 km across), generated from real geography: coastlines from Ireland to the Balkans and Tunis, the Alps, Pyrenees and Apennines, 26 rivers (they act as roads and add gold), forests, marshes and resources. New cities take the name of the nearest real town.
-- **Nations.** England, France, Castile, Portugal, the Holy Roman Empire, Burgundy, Venice and the Kalmar Union. Each starts at its historical capital with its own trait and starting tech. Scotland, Aragon, the Papal States, the Hanseatic League, the Hafsids and two dozen more are independent states you can conquer.
+- **Nations.** England, France, Castile, Portugal, the Holy Roman Empire, Burgundy, Venice and the Kalmar Union. Each starts at its historical capital with its own trait and starting tech, and is led by a representative historic figure, whose portrait appears on the realm selection screen and in diplomacy: Elizabeth I, Louis XIV, Isabella I, Henry the Navigator, Charles V, Philip the Good, Doge Francesco Foscari and Margaret I. Scotland, Aragon, the Papal States, the Hanseatic League, the Hafsids and two dozen more are independent states you can conquer.
 - **Economy.** Each citizen works one tile within two hexes of its city, on land the city has claimed. Cities pick the tiles themselves, guided by a focus you set in the city panel (balanced, food, production or gold), and give up output for food rather than starve when they can. Opening a city outlines its worked tiles on the map and shows each tile's yields. Cities grow on food, build with production, earn gold and science, and push their borders out with culture. Gold pays unit and building upkeep and can rush-buy production.
 - **Research.** 26 technologies over six eras, from Pottery to the Enlightenment. Each city beyond your fourth makes research 4% more expensive. Technologies unlock 17 units (Levy → Cuirassier, plus the Missionary), 15 buildings and 8 world wonders, including Notre-Dame, the Arsenale di Venezia and the Medici Bank.
 - **War.** Combat strength takes terrain, fortification, walls, veterancy and unit matchups into account. Pikes beat horse, and siege engines double against cities. Archers and siege engines shoot two tiles without retaliation. To capture a city, kill every defender, then move a melee or mounted unit in. With Sailing, units can embark onto coastal waters, and with Navigation onto the open ocean.
@@ -94,7 +94,8 @@ src/core/            pure game logic: no DOM, runs headless
 src/ui/
   app.ts             App: input, HUD, selection, city panel, turn flow
   renderer.ts        canvas map and minimap drawing
-  render/            terrain textures, flat icons, and three/: 3D models
+  render/            terrain textures, flat icons, faith badges, leader portraits
+                     (SVG), and three/: 3D models
                      (three.js, loaded lazily) baked into sprites for the map
   dialogs.ts         menu, new game, research, diplomacy, empire, help, game over
   tutorial.ts        the guided first game's coach card and its steps
