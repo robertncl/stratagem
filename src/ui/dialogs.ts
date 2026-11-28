@@ -197,41 +197,81 @@ export function unlocksOf(tech: string): string[] {
   return out;
 }
 
-export function showTech(g: Game, onPick: (tech: string) => void) {
+export interface TechHandlers {
+  /** study this tech now (clears any goal) */
+  research(tech: string): void;
+  /** work toward this tech step by step (null clears the goal) */
+  goal(tech: string | null): void;
+}
+
+export function showTech(g: Game, h: TechHandlers) {
   const pid = g.humanId;
   const p = g.player(pid);
   const avail = new Set(g.availableTechs(pid));
-  const eras = [1, 2, 3, 4, 5, 6];
+  const eras = [...new Set(TECH_LIST.map((t) => t.era))].sort((a, b) => a - b);
   const sci = g.citiesOf(pid).reduce((s, c) => s + computeCityYields(g, c).sci, 0);
-  $('tech-body').innerHTML = eras
-    .map(
-      (era) => `<section class="era"><h2>${ERA_NAMES[era]}</h2>
+  const goal = p.researchGoal ?? null;
+  const path = goal ? g.techPath(pid, goal) : [];
+  const turnsFor = (cost: number) => (sci > 0 ? Math.max(1, Math.ceil(cost / sci)) : '∞');
+  const goalCost = path.reduce((s, t) => s + g.techCost(pid, t), 0) - (p.research && path.includes(p.research) ? p.researchProgress : 0);
+  const name = (id: string) => TECH_LIST.find((x) => x.id === id)!.name;
+  const banner = goal
+    ? `<div class="tech-goal"><span>Goal: <b>${esc(name(goal))}</b> · ${path.length} tech${path.length === 1 ? '' : 's'} · about ${turnsFor(goalCost)} turns</span><button data-goal-clear>Clear goal</button></div>`
+    : `<div class="tech-goal muted">Click an available technology to study it, or a locked one to make it your goal: research then works toward it step by step. Hover a technology to see what it needs.</div>`;
+  $('tech-body').innerHTML =
+    banner +
+    `<div class="tech-tree">${eras
+      .map(
+        (era) => `<section class="era"><h2>${ERA_NAMES[era]}</h2>
       ${TECH_LIST.filter((t) => t.era === era)
         .map((t) => {
           const known = p.techs.includes(t.id);
           const current = p.research === t.id;
           const cls = known ? 'known' : current ? 'current' : avail.has(t.id) ? 'avail' : 'locked';
+          const step = path.indexOf(t.id);
           const cost = g.techCost(pid, t.id);
-          const turns = sci > 0 ? Math.max(1, Math.ceil((cost - (current ? p.researchProgress : 0)) / sci)) : '∞';
           const unl = [...unlocksOf(t.id), ...(t.note ? [t.note] : [])].join(', ');
           const prog = current ? `<div class="pbar"><i style="width:${Math.min(100, (p.researchProgress / cost) * 100)}%"></i></div>` : '';
-          return `<button class="tech ${cls}" data-tech="${t.id}" ${known || cls === 'locked' ? 'disabled' : ''}>
+          const status = known ? 'Known' : `${cost} science · ${turnsFor(cost - (current ? p.researchProgress : 0))} turns`;
+          return `<button class="tech ${cls}${step >= 0 ? ' onpath' : ''}${t.id === goal ? ' goal' : ''}" data-tech="${t.id}" ${known ? 'disabled' : ''}
+            title="${known ? '' : cls === 'locked' ? 'Set as research goal' : 'Research now'}">
+            ${step >= 0 ? `<span class="step">${step + 1}</span>` : ''}
             <b>${esc(t.name)}</b>
-            <span class="muted">${known ? 'Known' : `${cost} science · ${turns} turns`}</span>
+            <span class="muted">${status}</span>
             ${unl ? `<span class="unl">${esc(unl)}</span>` : ''}
-            ${t.prereqs.length && !known ? `<span class="muted">Needs: ${t.prereqs.map((r) => TECH_LIST.find((x) => x.id === r)!.name).join(', ')}</span>` : ''}
+            ${t.prereqs.length && !known ? `<span class="muted">Needs: ${t.prereqs.map(name).join(', ')}</span>` : ''}
             ${prog}
           </button>`;
         })
         .join('')}</section>`,
-    )
-    .join('');
-  $('tech-body').onclick = (e) => {
-    const t = (e.target as HTMLElement).closest<HTMLElement>('[data-tech]')?.dataset.tech;
-    if (t) {
-      onPick(t);
-      closeDialog('dlg-tech');
+      )
+      .join('')}</div>`;
+  const body = $('tech-body');
+  // hovering a tech lights up everything it still needs, and what it leads to
+  const mark = (id: string | null) => {
+    const need = new Set(id ? g.techPath(pid, id) : []);
+    const leads = new Set(id ? TECH_LIST.filter((t) => t.prereqs.includes(id)).map((t) => t.id) : []);
+    body.querySelectorAll<HTMLElement>('[data-tech]').forEach((el) => {
+      const t = el.dataset.tech!;
+      el.classList.toggle('needs', !!id && t !== id && need.has(t));
+      el.classList.toggle('leads', leads.has(t));
+    });
+    body.querySelector('.tech-tree')?.classList.toggle('hovering', !!id);
+  };
+  body.onmouseover = (e) => mark((e.target as HTMLElement).closest<HTMLElement>('[data-tech]')?.dataset.tech ?? null);
+  body.onmouseleave = () => mark(null);
+  body.onclick = (e) => {
+    const el = e.target as HTMLElement;
+    if (el.closest('[data-goal-clear]')) {
+      h.goal(null);
+      showTech(g, h);
+      return;
     }
+    const t = el.closest<HTMLElement>('[data-tech]')?.dataset.tech;
+    if (!t || p.techs.includes(t)) return;
+    if (avail.has(t)) h.research(t);
+    else h.goal(t);
+    closeDialog('dlg-tech');
   };
   openDialog('dlg-tech');
 }

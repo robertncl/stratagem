@@ -691,8 +691,9 @@ export class App {
     $('tb-gold').innerHTML = `${p.gold} <span class="${t.net >= 0 ? 'pos' : 'neg'}">(${t.net >= 0 ? '+' : ''}${t.net})</span>`;
     const r = p.research ? TECHS[p.research] : null;
     const rc = r ? g.techCost(this.me, r.id) : 0;
+    const goal = p.researchGoal && p.researchGoal !== p.research ? ` <span class="muted">→ ${esc(TECHS[p.researchGoal].name)}</span>` : '';
     $('tb-sci').innerHTML = r
-      ? `${esc(r.name)} ${Math.min(p.researchProgress, rc)}/${rc} <span class="muted">(+${t.sci}, ${t.sci > 0 ? Math.max(1, Math.ceil((rc - p.researchProgress) / t.sci)) : '∞'}t)</span>`
+      ? `${esc(r.name)} ${Math.min(p.researchProgress, rc)}/${rc} <span class="muted">(+${t.sci}, ${t.sci > 0 ? Math.max(1, Math.ceil((rc - p.researchProgress) / t.sci)) : '∞'}t)</span>${goal}`
       : g.availableTechs(this.me).length
         ? `<span class="neg">Choose research</span> <span class="muted">(+${t.sci})</span>`
         : 'All knowledge attained';
@@ -1014,9 +1015,17 @@ export class App {
   // ------------------------------------------------------------- dialogs
 
   private openTech() {
-    showTech(this.game, (tech) => {
-      this.game.setResearch(this.me, tech);
-      this.refresh();
+    showTech(this.game, {
+      research: (tech) => {
+        this.game.setResearchGoal(this.me, null);
+        this.game.setResearch(this.me, tech);
+        this.refresh();
+      },
+      goal: (tech) => {
+        this.game.setResearchGoal(this.me, tech);
+        if (tech) this.toast(`Research goal: ${TECHS[tech].name}. Each step will be chosen for you.`);
+        this.refresh();
+      },
     });
   }
 

@@ -68,6 +68,8 @@ export interface Player {
   alive: boolean;
   gold: number;
   research: string | null;
+  /** distant tech to work toward: each time research finishes, the next step is picked */
+  researchGoal?: string | null;
   researchProgress: number;
   techs: string[];
   /** original capital city id (domination victory) */

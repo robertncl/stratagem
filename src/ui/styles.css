@@ -317,7 +317,16 @@ select, input[type='number'] { font: inherit; background: #23262d; color: var(--
 .slot span { flex: 1; color: var(--muted); font-size: 13px; }
 
 /* tech tree */
-.tech-tree { display: grid; grid-template-columns: repeat(6, minmax(150px, 1fr)); gap: 10px; overflow: auto; }
+.tech-tree { display: grid; grid-auto-flow: column; grid-auto-columns: minmax(180px, 1fr); gap: 10px; overflow: auto; max-height: calc(90vh - 130px); padding-bottom: 4px; overscroll-behavior: contain; }
+.tech-goal { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin: 0 0 10px; font-size: 13px; min-height: 30px; }
+.tech { position: relative; }
+.tech.locked { cursor: pointer; }
+.tech.onpath { border-color: var(--gold); }
+.tech.goal { border-color: var(--gold-bright); box-shadow: 0 0 0 1px var(--gold-bright) inset; }
+.tech .step { position: absolute; top: 5px; right: 6px; min-width: 18px; height: 18px; border-radius: 9px; background: var(--gold); color: #1b1408; font: 700 11px/18px var(--sans); text-align: center; }
+.tech-tree.hovering .tech:not(.needs):not(.leads):not(:hover) { opacity: 0.35; }
+.tech.needs { border-color: #8fe3ff; opacity: 1; }
+.tech.leads { border-color: #b07ad0; border-style: dashed; opacity: 1; }
 .era h2 { font: 600 13px var(--sans); text-transform: uppercase; letter-spacing: 0.08em; color: var(--gold); margin: 0 0 6px; }
 .era { display: flex; flex-direction: column; gap: 6px; }
 .tech { text-align: left; padding: 7px 8px; display: flex; flex-direction: column; gap: 2px; font-size: 12px; }
@@ -325,7 +334,7 @@ select, input[type='number'] { font: inherit; background: #23262d; color: var(--
 .tech .unl { color: var(--muted); }
 .tech.known { background: #1f3322; border-color: #4e7a45; }
 .tech.current { border-color: var(--sci); background: #1d2c3a; }
-.tech.locked { opacity: 0.55; }
+.tech.locked { opacity: 0.6; }
 .tech .pbar { height: 4px; background: rgb(255 255 255 / 0.1); border-radius: 2px; overflow: hidden; margin-top: 3px; }
 .tech .pbar i { display: block; height: 100%; background: var(--sci); }
 
@@ -349,7 +358,7 @@ table.grid tr.me td { background: rgb(201 162 74 / 0.08); }
   #log { display: none; }
   #selection { left: 10px; right: 10px; transform: none; min-width: 0; max-width: none; bottom: 70px; }
   #minimap { width: 140px; }
-  .tech-tree { grid-template-columns: repeat(2, 1fr); }
+  .tech-tree { grid-auto-columns: minmax(70vw, 1fr); }
 }
 .focus { display: grid; grid-template-columns: repeat(4, 1fr); gap: 4px; }
 .focus button { padding: 4px 2px; font-size: 12px; background: rgb(255 255 255 / 0.03); }
