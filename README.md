@@ -14,6 +14,8 @@ npm run dev        # then open http://localhost:5173
 
 The game opens at the main menu. New to the game? Choose **Tutorial**. It starts a game as France on easy, and a coach card walks you through your first turns: choosing research, setting production, exploring with the Scout, fortifying, ending the turn, and founding a second city on a marked site. Then it covers city focus, faith, war and diplomacy, and the ways to win. Each task step moves on by itself once you've done it. You can skip a step or close the coach at any time.
 
+For the full rules, open **Game Guide** from the main menu or the Help screen (it's `guide.html` next to the game). It covers every system in detail: realms and leaders, terrain, cities, research, combat, faith, diplomacy, super weapons and the space race. Its tables of techs, units, buildings and wonders are generated from the game's data, so they always match the rules.
+
 Otherwise, choose **New Game**, pick a realm, and set the options:
 
 | Option | Effect |
@@ -91,6 +93,7 @@ To save that all-AI game's timeline and war log to a file, set `STRATAGEM_SIM_OU
 
 ```
 index.html           page shell: map canvas, HUD and <dialog>s
+guide.html           the game guide (a second page of the site)
 src/main.ts          entry point: wires the menu to createGame()
 src/core/            pure game logic: no DOM, runs headless
   hex.ts             hex grid maths (pointy-top, odd-r offset)
@@ -112,5 +115,6 @@ src/ui/
   tutorial.ts        the guided first game's coach card and its steps
   storage.ts         localStorage save slots
   styles.css
+src/guide/           the guide's tables (built from src/core data), sorting, scrollspy
 tests/               Vitest: map, rules, full AI-vs-AI simulation
 ```

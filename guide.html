@@ -1,0 +1,368 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="color-scheme" content="dark" />
+    <meta name="description" content="The complete guide to Stratagem: realms and leaders, cities, research from the Middle Ages to the Space Age, combat, faith, diplomacy, super weapons and every way to win." />
+    <title>Stratagem — Game Guide</title>
+    <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Cpath d='M16 2 29 9.5v13L16 30 3 22.5v-13Z' fill='%23c9a24a'/%3E%3Cpath d='M10 22V13l3 2 3-4 3 4 3-2v9Z' fill='%23231a10'/%3E%3C/svg%3E" />
+  </head>
+  <body>
+    <a class="skip" href="#main">Skip to the guide</a>
+    <header class="masthead">
+      <div class="brand">
+        <a href="./" class="title">Stratagem</a>
+        <span class="subtitle">The Game Guide</span>
+      </div>
+      <a class="play" href="./">Play the game ▸</a>
+    </header>
+
+    <div class="layout">
+      <nav id="toc" aria-label="Contents">
+        <h2>Contents</h2>
+        <ol>
+          <li><a href="#overview">Overview</a></li>
+          <li><a href="#start">Getting started</a></li>
+          <li><a href="#screen">The screen</a></li>
+          <li><a href="#controls">Controls</a></li>
+          <li><a href="#realms">Realms &amp; leaders</a></li>
+          <li><a href="#land">The land</a></li>
+          <li><a href="#cities">Cities</a></li>
+          <li><a href="#economy">Gold &amp; upkeep</a></li>
+          <li><a href="#research">Research</a></li>
+          <li><a href="#units">Units</a></li>
+          <li><a href="#combat">Combat</a></li>
+          <li><a href="#buildings">Buildings</a></li>
+          <li><a href="#wonders">Wonders &amp; projects</a></li>
+          <li><a href="#faith">Faith</a></li>
+          <li><a href="#diplomacy">Diplomacy</a></li>
+          <li><a href="#weapons">Super weapons</a></li>
+          <li><a href="#space">The space race</a></li>
+          <li><a href="#victory">Victory &amp; score</a></li>
+          <li><a href="#tips">Strategy tips</a></li>
+          <li><a href="#saves">Saves &amp; settings</a></li>
+        </ol>
+      </nav>
+
+      <main id="main" tabindex="-1">
+        <section id="overview" tabindex="-1">
+          <h2>Overview</h2>
+          <p class="lede">
+            Stratagem is a turn-based strategy game of Western Europe, from 1400 AD to the Space Age. You lead one of eight great powers.
+            Explore the continent, found cities, research <span data-const="TECH_COUNT">51</span> technologies over
+            <span data-const="ERA_COUNT">11</span> eras, and outlast, outbuild or outfly your rivals: seven computer-led powers and
+            <span data-const="MINOR_COUNT">29</span> independent states.
+          </p>
+          <ul class="facts">
+            <li><b><span data-const="MAX_TURNS">325</span> turns</b>, <span data-const="YEARS_PER_TURN">2</span> years each: 1400 to <span data-const="END_YEAR">2050</span> AD.</li>
+            <li><b>About 4,600 hexes</b> of real geography, each about 40 km across, from Ireland to the Balkans and Tunis.</li>
+            <li><b>Four ways to win</b>: conquest, domination, the space race, or the highest score at the end.</li>
+          </ul>
+        </section>
+
+        <section id="start" tabindex="-1">
+          <h2>Getting started</h2>
+          <h3>The main menu</h3>
+          <dl class="defs">
+            <dt>Continue</dt><dd>Resumes the autosave, which is written each time you end a turn.</dd>
+            <dt>New Game</dt><dd>Pick a realm and set the options below.</dd>
+            <dt>Tutorial</dt><dd>A guided first game as France on easy. A coach card in the top-left walks you through research, production, scouting, fortifying, ending the turn, founding a second city on a marked site, city focus, faith, diplomacy and victory. Task steps move on once you've done them. You can skip a step, go back, or close the coach at any time.</dd>
+            <dt>Load Game</dt><dd>The autosave or one of three save slots.</dd>
+          </dl>
+          <h3>New game options</h3>
+          <div class="table-wrap" role="region" aria-labelledby="opts-cap" tabindex="0">
+            <table>
+              <caption id="opts-cap">New game options</caption>
+              <thead><tr><th scope="col">Option</th><th scope="col">Effect</th></tr></thead>
+              <tbody>
+                <tr><th scope="row">Difficulty</th><td>Changes only the computer players. <b>Easy</b>: AI cities make 85% of normal yields. <b>Hard</b>: they make 125%, each AI power starts with an extra Levy and Settler, and AIs are a little keener to attack you.</td></tr>
+                <tr><th scope="row">Map</th><td><b>Known world</b> (the default) starts with the whole map charted. <b>Unexplored</b> hides everything you haven't seen yet.</td></tr>
+                <tr><th scope="row">Seed</th><td>Leave blank for a random game. Enter a number to get the same map and starting positions every time.</td></tr>
+              </tbody>
+            </table>
+          </div>
+          <h3>Your first turns</h3>
+          <p>You start in your historical capital (size 2, borders already two tiles out) with two Levies, a Scout and a Settler.</p>
+          <ol class="steps">
+            <li><b>Choose research</b> (<kbd>T</kbd>). Pottery, Bronze Working or your realm's favourite are good first picks.</li>
+            <li><b>Choose production</b> in the capital: click it twice to open it. A second Settler or a Scout is a strong start.</li>
+            <li><b>Send the Scout exploring</b>: select it and right-click far away.</li>
+            <li><b>Fortify a Levy</b> in the capital (<kbd>F</kbd>), so it stops asking for orders.</li>
+            <li><b>Walk the Settler</b> to a good site, with food, a river or coast, three or more tiles from any city, and press <kbd>B</kbd>.</li>
+            <li><b>End the turn</b> (<kbd>Enter</kbd>). The button in the bottom-right always names the next thing that needs you.</li>
+          </ol>
+          <p class="note">AI powers never declare war in the first 12 turns, so you have time to expand.</p>
+        </section>
+
+        <section id="screen" tabindex="-1">
+          <h2>The screen</h2>
+          <dl class="defs">
+            <dt>Top bar</dt><dd>Your realm and its state-religion badge, your treasury with its net change per turn, the current research (with progress, turns left and any goal), the turn and year, and the Diplomacy, Empire, Help and Menu buttons.</dd>
+            <dt>Map</dt><dd>Drag to pan; scroll or pinch to zoom. Cities show their size and faith on their name label. Up close, units and cities are 3D models; zoomed out, they become banners and shields.</dd>
+            <dt>Unit panel</dt><dd>Bottom centre. The selected unit's strength, moves and health, its orders (fortify, sleep, found city, preach, launch…), and the other units on its tile.</dd>
+            <dt>City panel</dt><dd>On the right when a city is open. It shows yields, growth, focus, faith, the build list and buildings, and outlines the city's worked tiles on the map, with each tile's yields.</dd>
+            <dt>Event log</dt><dd>Bottom-left. Click an entry to jump to where it happened.</dd>
+            <dt>Minimap</dt><dd>Bottom-right. Click or drag on it to move the view.</dd>
+            <dt>End Turn button</dt><dd>Names the next thing that needs attention, such as <i>Choose Research</i>, <i>Choose Production</i> or <i>Next Unit</i>. Press <kbd>Enter</kbd> to end the turn anyway.</dd>
+          </dl>
+          <h3>Screens</h3>
+          <dl class="defs">
+            <dt>Research <kbd>T</kbd></dt><dd>The tech tree, one column per era. Click to research, or to set a goal. Hover a tech to see what it needs.</dd>
+            <dt>Diplomacy <kbd>D</kbd></dt><dd>Every realm's leader, relation, faith, cities, army and score, with buttons to declare war or propose peace. ☢ marks realms that have the bomb.</dd>
+            <dt>Empire <kbd>E</kbd></dt><dd>All your cities with their yields and builds. Click a city to jump to it. Your space race status is shown here too.</dd>
+            <dt>Help <kbd>H</kbd></dt><dd>A one-screen summary of the rules, with a link back to this guide.</dd>
+          </dl>
+        </section>
+
+        <section id="controls" tabindex="-1">
+          <h2>Controls</h2>
+          <div class="table-wrap" role="region" aria-labelledby="keys-cap" tabindex="0">
+            <table>
+              <caption id="keys-cap">Mouse and keyboard</caption>
+              <thead><tr><th scope="col">Input</th><th scope="col">Action</th></tr></thead>
+              <tbody>
+                <tr><th scope="row">Left-click</th><td>Select a unit or city. Click a city twice to open it. Clicking a stack cycles through its units.</td></tr>
+                <tr><th scope="row">Right-click, or left-click empty ground with a unit selected</th><td>Move or attack. Hover first to preview the path (numbers mark where each turn ends) or the combat odds.</td></tr>
+                <tr><th scope="row">Drag · arrow keys</th><td>Pan the map</td></tr>
+                <tr><th scope="row">Wheel · pinch · <kbd>+</kbd> / <kbd>−</kbd></th><td>Zoom</td></tr>
+                <tr><th scope="row"><kbd>Space</kbd> / <kbd>N</kbd></th><td>Next unit that needs orders</td></tr>
+                <tr><th scope="row"><kbd>F</kbd> / <kbd>S</kbd></th><td>Fortify / sleep</td></tr>
+                <tr><th scope="row"><kbd>B</kbd></th><td>Found a city (Settler)</td></tr>
+                <tr><th scope="row"><kbd>P</kbd></th><td>Preach (Missionary)</td></tr>
+                <tr><th scope="row"><kbd>L</kbd></th><td>Launch (Atomic Bomb or Nuclear Missile), then click a target</td></tr>
+                <tr><th scope="row"><kbd>C</kbd></th><td>Centre on the selected unit</td></tr>
+                <tr><th scope="row"><kbd>Del</kbd> / <kbd>Backspace</kbd></th><td>Disband the selected unit</td></tr>
+                <tr><th scope="row"><kbd>Enter</kbd></th><td>End the turn</td></tr>
+                <tr><th scope="row"><kbd>T</kbd> · <kbd>D</kbd> · <kbd>E</kbd> · <kbd>H</kbd> or <kbd>?</kbd></th><td>Research · Diplomacy · Empire · Help</td></tr>
+                <tr><th scope="row"><kbd>Esc</kbd></th><td>Cancel aiming, close the city panel, deselect, then open the menu</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </section>
+
+        <section id="realms" tabindex="-1">
+          <h2>Realms &amp; leaders</h2>
+          <p>Each great power starts at its historical capital, with its own trait and a free technology. It is led by a representative figure of its history, whose portrait you'll see on the selection screen and in diplomacy.</p>
+          <div data-table="realms"></div>
+          <h3>Independent states</h3>
+          <p>
+            Independent states can't found new cities, build wonders or train Settlers. They defend their capital, grow, build up, and will make peace with you after a few turns of war. Capture their cities to grow your realm; many are walled. The Papal States hold <b>Rome</b> and the Hafsids hold <b>Tunis</b>, the holy cities of Catholicism and Islam.
+          </p>
+          <ul id="minors" class="minors"></ul>
+        </section>
+
+        <section id="land" tabindex="-1">
+          <h2>The land</h2>
+          <p>The map is generated from real geography: coastlines, the Alps, Pyrenees and Apennines, 26 rivers, forests and marshes. Each city works the tiles around it, so the land decides how a city grows.</p>
+          <div data-table="terrain"></div>
+          <ul>
+            <li><b>Rivers</b> add +1 gold to a tile, and moving from one river tile to another costs only 1, so they act as roads.</li>
+            <li><b>Scouts</b> pay 1 movement for any land (2 for mountains).</li>
+            <li><b>Mounted units</b> get no terrain defence bonus outside cities.</li>
+            <li><b>The sea.</b> With <b>Sailing</b>, land units can embark onto coastal waters and lakes, and with <b>Navigation</b>, onto the ocean. Embarking or landing uses a whole turn's movement. Embarked units sail on a cog, can't attack, and defend very weakly, so escort them or keep them away from enemies.</li>
+          </ul>
+          <div data-table="resources"></div>
+        </section>
+
+        <section id="cities" tabindex="-1">
+          <h2>Cities</h2>
+          <h3>Founding</h3>
+          <p>A Settler founds a city with <kbd>B</kbd>. The site must be land other than mountains, not inside another realm's borders, and at least 3 tiles from every city. New cities take the name of the nearest real town. A Settler can only be finished in a city of size 2 or more, and costs that city 1 population. Your first city is your capital, which makes +1 food, +1 production, +3 gold, +3 science and +2 culture.</p>
+          <h3>Citizens, tiles and focus</h3>
+          <p>
+            Each citizen works one tile within <span data-const="WORK_RADIUS">2</span> tiles of the city, on land the city has claimed and that no enemy stands on. The city centre is worked for free (at least 2 food, 2 production and 1 gold). Cities choose their own tiles, guided by a <b>focus</b> you set in the city panel:
+            <b>Balanced</b>, <b>Food</b>, <b>Production</b> or <b>Gold</b>. Whatever the focus, a city gives up other yields for food rather than starve. Opening a city outlines its worked tiles on the map and shows each tile's yields. A city with more citizens than tiles has idle citizens: it has outgrown its land.
+          </p>
+          <h3>Growth</h3>
+          <p>Each citizen eats 2 food. The surplus is stored, and when the store is full the city grows by one. A Granary keeps a quarter of the store after growing. If the store would go below zero, the city shrinks instead.</p>
+          <div data-table="growth"></div>
+          <h3>Borders and culture</h3>
+          <p>Culture accumulates in each city. At 12 culture its borders grow from 1 to 2 tiles, and at 90 to <span data-const="MAX_BORDER_RADIUS">3</span>, claiming every unowned tile in range. Temples, wonders, your capital, some faiths and some realm traits add culture.</p>
+          <h3>Production</h3>
+          <ul>
+            <li>A city builds one thing at a time: a unit, a building, a wonder or project, or <b>Wealth</b>, which turns half its production into gold.</li>
+            <li>Switching between a unit and a building loses half the production stored so far.</li>
+            <li>When something finishes, up to a turn's worth of extra production (at least 30) carries over to the next item.</li>
+            <li><b>Buying</b> finishes the current item next turn for 2.2 gold per missing production point, plus 10. You can't buy wonders or national projects, or buy in a city in unrest.</li>
+            <li>If a rival finishes a wonder you were building, the city stops but keeps its production for the next item.</li>
+          </ul>
+          <h3>Capture and unrest</h3>
+          <p>
+            A captured city loses one population, its stored food and production, and each ordinary building with a 40% chance (wonders always survive). It then spends 3 turns in <b>unrest</b>, making no production, gold or science, or <span data-const="DISSENT_UNREST">2</span> turns more if its faith differs from its new owner's. Retaking your original capital makes it your capital again.
+          </p>
+        </section>
+
+        <section id="economy" tabindex="-1">
+          <h2>Gold &amp; upkeep</h2>
+          <ul>
+            <li><b>Income</b>: gold from worked tiles (rivers, wine, silver…), the city centre, buildings like Markets and Banks, faith and traits.</li>
+            <li><b>Building upkeep</b> is listed with each building. Wonders and projects cost nothing to keep.</li>
+            <li><b>Unit upkeep</b>: 3 units plus one per city are free, and each unit beyond that costs 1 gold a turn.</li>
+            <li><b>Bankruptcy</b>: if your treasury would fall below zero, your cheapest military unit deserts each turn until it doesn't.</li>
+            <li>The top bar shows your treasury and its net change per turn.</li>
+          </ul>
+        </section>
+
+        <section id="research" tabindex="-1">
+          <h2>Research</h2>
+          <p>Every city produces science: 1, plus 0.6 per citizen, plus buildings, wonders and capital bonuses. Your science goes into one technology at a time. Leftover science carries into the next one, and science made while nothing is chosen is banked.</p>
+          <ul>
+            <li><b>Cost</b> is set by era (shown below), and goes up 4% for every city you own beyond your fourth.</li>
+            <li><b>Research goals.</b> On the research screen, click a locked tech to make it your goal. Each time research finishes, the cheapest tech on the way is picked for you. The screen numbers the path, and the top bar shows the goal.</li>
+            <li><b>Hover</b> a tech to light up everything it still needs (cyan) and what it leads to (dashed).</li>
+            <li>Newer units replace older ones in the build list. For example, once you can build Pikemen, Spearmen are no longer offered.</li>
+            <li>Special effects: <b>Sailing</b> and <b>Navigation</b> let units take to the sea; the first great power to learn <b>Printing Press</b> starts the Reformation; <b>Space Flight</b> opens the space race; <b>Satellites</b> chart the whole map.</li>
+          </ul>
+          <p>
+            In computer-only games the medieval eras take about 140 turns and the Space Age arrives around turn 280–300. Below is the whole tree, era by era. ★ marks a world wonder and ◆ a national project.
+          </p>
+          <div id="tech-tree" class="tech-tree"></div>
+        </section>
+
+        <section id="units" tabindex="-1">
+          <h2>Units</h2>
+          <p>
+            <span data-const="UNIT_COUNT">29</span> units in six lines: infantry, mounted, ranged, siege, recon and civilians, plus super weapons.
+            Each line is replaced by its successor as you research, from the Levy's pitchfork to Mechanized Infantry and from the Horseman to Modern Armor.
+            Units have 100 HP, heal when they don't act, and become <b>veterans</b> (★, +25% strength) after 4 fights or when trained in a city with Barracks.
+          </p>
+          <div data-table="units"></div>
+        </section>
+
+        <section id="combat" tabindex="-1">
+          <h2>Combat</h2>
+          <p>Hover an enemy with a unit selected to see the forecast: both strengths and the damage each side should take. Damage grows with the ratio of the two strengths, and both sides lose some strength as they lose HP (a unit at 0 HP fights at half strength).</p>
+          <h3>Strength</h3>
+          <ul>
+            <li><b>Attacking</b>: attack (or ranged) strength, +25% for veterans, plus realm traits (Castile, the Kalmar Union), the Pikeman/Spearman bonus against mounted units, and the siege bonus against cities.</li>
+            <li><b>Defending</b>: defence strength, plus the terrain bonus (none for mounted units outside cities), +25% when fortified or in a city, and the city's own bonus: 15% plus 2.5% per citizen (up to 25%), with Walls +60%, a Castle another +60% and the Alhambra +100%.</li>
+            <li>An embarked unit defends at strength 2, whatever its type.</li>
+          </ul>
+          <h3>Ranged and siege</h3>
+          <p>Archers, Crossbowmen, Gatling and Machine Guns and all siege engines strike from 2 tiles away (Rocket Artillery from 3) and take <b>no retaliation</b>, though ranged attacks do 15% less damage. They can't fire from the sea, and they can't capture cities. Siege engines are +100% against units in cities.</p>
+          <h3>Taking a city</h3>
+          <p>Kill every defender, then march a melee or mounted unit in. Enemy civilians on a tile you enter are captured (Settlers) or scattered.</p>
+          <h3>Healing</h3>
+          <p>A unit that didn't move or fight heals at the end of the turn: 20 HP in your own city, 15 in your territory, 10 in neutral land and 5 in enemy land. Fortified units outside cities heal 5 more, and units next to an enemy army heal half as fast.</p>
+        </section>
+
+        <section id="buildings" tabindex="-1">
+          <h2>Buildings</h2>
+          <p><span data-const="BUILDING_COUNT">27</span> buildings, from the Granary to the Spaceport. Some need another building first: Castle needs Walls, University needs a Library, and so on.</p>
+          <div data-table="buildings"></div>
+        </section>
+
+        <section id="wonders" tabindex="-1">
+          <h2>Wonders &amp; projects</h2>
+          <p>Only one of each <b>world wonder</b> exists in the world. If a rival finishes first, your city keeps its production for something else. Wonders can't be bought, survive capture, and add 20 to the score of whoever holds them.</p>
+          <div data-table="wonders"></div>
+          <p><b>National projects</b> are built once per realm and belong to the realm, not the city. They can't be bought.</p>
+          <div data-table="projects"></div>
+        </section>
+
+        <section id="faith" tabindex="-1">
+          <h2>Faith</h2>
+          <p>Every city follows a faith, shown by the badge on its name label.</p>
+          <div data-table="faiths"></div>
+          <ul>
+            <li><b>State religion.</b> Your realm's faith is your capital's. A city of another faith is in <b>dissent</b> and loses <span data-const="DISSENT_PCT">20</span>% of its production. If your capital converts, your state religion changes with it, and your other cities may then be in dissent.</li>
+            <li>
+              <b>Pressure.</b> Each turn, every city presses its faith on every city within <span data-const="PRESSURE_RANGE">6</span> tiles (at half strength beyond 3), and twice as hard on itself.
+              A city presses with 1, plus 1 for every 4 citizens, plus its buildings (Temple +2, Cluny Abbey +2, Notre-Dame +3, El Escorial +2), plus <span data-const="HOLY_PRESSURE">3</span> for a holy city.
+              Pressure builds up in each city, and when another faith's total outweighs the city's own by a fifth (plus a little), the city converts. The city panel shows how its people are split.
+            </li>
+            <li><b>Holy cities</b> make +<span data-const="HOLY_GOLD">3</span> gold and +<span data-const="HOLY_CULTURE">2</span> culture, press harder, and never convert.</li>
+            <li><b>The Reformation.</b> The first great power to learn Printing Press founds Protestantism in its capital, which becomes the faith's holy city. That realm's other cities stay Catholic until it converts them.</li>
+            <li><b>Missionaries</b> (Theology, 40 production) carry the faith of the city that trains them. Next to or inside a city of another faith, press <kbd>P</kbd> to convert it at once, which uses up the missionary. They can't preach in holy cities or in cities of realms you're at war with.</li>
+            <li>AIs send missionaries mostly to win back their own dissenting cities, and are readier to make war on realms of another faith.</li>
+          </ul>
+        </section>
+
+        <section id="diplomacy" tabindex="-1">
+          <h2>Diplomacy</h2>
+          <ul>
+            <li>Every realm starts at peace with every other. Declare war from the Diplomacy screen, or by attacking (you're asked to confirm).</li>
+            <li>A <b>peace treaty</b> lasts at least <span data-const="PEACE_TREATY_TURNS">10</span> turns, and neither side can declare war until it ends.</li>
+            <li>You can propose peace to a realm you're at war with. A great power that has been at war with you for at least 5 turns accepts if its army is weaker than yours, or the war has dragged on past 30 turns; between 10 and 30 turns it sometimes accepts anyway. Independent states accept after 4 turns.</li>
+            <li>AIs offer peace too: you'll be asked at the start of your turn.</li>
+            <li>When choosing whom to attack, AIs look for weaker neighbours, and lean toward realms of another faith and realms that have used the bomb. On Hard, they lean toward you.</li>
+          </ul>
+        </section>
+
+        <section id="weapons" tabindex="-1">
+          <h2>Super weapons</h2>
+          <p>With <b>Nuclear Fission</b>, build the <b>Manhattan Project</b> to develop the bomb. After that, any of your cities can build:</p>
+          <ul>
+            <li><b>Atomic Bombs</b>: range 10, blast radius 1 (7 tiles).</li>
+            <li><b>Nuclear Missiles</b> (also needs <b>Rocketry</b>): range 24, blast radius 2 (19 tiles).</li>
+          </ul>
+          <h3>Launching</h3>
+          <p>A weapon waits in the city that built it. Select it, press <kbd>L</kbd> (or ☢ Launch), and hover a target. The blast is previewed in red (grey where you can't launch), and the tooltip lists the units destroyed, the cities devastated, any new wars and any Missile Shield. Click and confirm to launch.</p>
+          <h3>Effects</h3>
+          <ul>
+            <li><b>Every unit</b> in the blast is destroyed, yours included.</li>
+            <li>Cities keep 40% of their people at ground zero, 60% one tile out and 80% two out. They lose many buildings (wonders survive), all stored food and production, and fall into unrest.</li>
+            <li>Land in the blast is left in <b>fallout</b> and yields nothing for <span data-const="FALLOUT_TURNS">20</span> turns. The map marks it with a trefoil.</li>
+            <li>Striking a realm you're at peace with means war, and you can't launch during a peace treaty. Every AI is readier to make war on a realm that has used the bomb.</li>
+          </ul>
+          <h3>Defence</h3>
+          <p>A <b>Missile Shield</b> (Satellites) shoots down <span data-const="SHIELD_PCT">75</span>% of strikes aimed within <span data-const="SHIELD_RANGE">3</span> tiles of its city. Super weapons never fight, move or defend, and are lost if their city falls.</p>
+          <h3>How the AI uses them</h3>
+          <p>An AI develops the bomb once a rival has it or it's at war with a great power, and keeps up to two weapons. It launches at most once every <span data-const="AI_LAUNCH_COOLDOWN">5</span> turns, and only at great powers it has been fighting for a while. It never strikes where the blast would hit its own cities or drag in another great power, and it strikes more readily when it's losing. Build Missile Shields in your key cities once your rivals have the bomb.</p>
+        </section>
+
+        <section id="space" tabindex="-1">
+          <h2>The space race</h2>
+          <ol class="steps">
+            <li>Research <b>Space Flight</b> and build the <b>Apollo Program</b> (a national project).</li>
+            <li>Build a <b>Spaceport</b> (needs a Factory) in one or more productive cities.</li>
+            <li>In your Spaceport cities, build the colony ship's three parts: the <b>Launch Booster</b> (Space Flight), the <b>Orbital Habitat</b> (Robotics) and the <b>Fusion Drive</b> (Fusion). Different cities can build different parts at the same time.</li>
+            <li>The ship launches when the last part is done, and lands <span data-const="FLIGHT_TURNS">10</span> turns later. The first ship to land wins.</li>
+          </ol>
+          <p class="note">If your capital falls while the ship is in flight, the ship is lost and its parts must be built again. Rivals know this, so guard your capital during the flight, and watch for enemy launches in the log.</p>
+        </section>
+
+        <section id="victory" tabindex="-1">
+          <h2>Victory &amp; score</h2>
+          <dl class="defs">
+            <dt>Conquest</dt><dd>Be the last great power standing.</dd>
+            <dt>Domination</dt><dd>Hold the original capital of every great power at once.</dd>
+            <dt>Space</dt><dd>Be the first to land a colony ship on a new world.</dd>
+            <dt>Score</dt><dd>Have the highest score when turn <span data-const="MAX_TURNS">325</span> ends (<span data-const="END_YEAR">2050</span> AD).</dd>
+          </dl>
+          <p><b>Score</b> = 8 per city + 3 per citizen + 5 per tech + 20 per world wonder + 1 per 4 tiles of territory. The Diplomacy screen shows every realm's score.</p>
+          <p>You're eliminated, and lose, when your last city falls. Units alone don't keep you in the game.</p>
+        </section>
+
+        <section id="tips" tabindex="-1">
+          <h2>Strategy tips</h2>
+          <ul class="tips">
+            <li><b>Expand early.</b> Cities are your engine. Train Settlers while land is free, and before rivals take the best river and coastal sites.</li>
+            <li><b>Mind the research penalty.</b> Each city beyond the fourth makes research 4% dearer, but a good city still pays for itself many times over.</li>
+            <li><b>Use focus.</b> Switch a city to Food to grow it quickly, then to Production to build a wonder. Rivers and wine or silver make gold-focus cities.</li>
+            <li><b>Walls before war.</b> Walls and a Castle more than double a city's defence. Defenders fortified in a walled city on a hill are very hard to dislodge.</li>
+            <li><b>Bring siege.</b> Catapults through to Rocket Artillery double against cities and take no retaliation. Soften the defenders, then send in melee.</li>
+            <li><b>Keep the faith.</b> Before you conquer a city of another faith, have a Missionary ready to convert it and end its dissent.</li>
+            <li><b>Aim for a goal.</b> Set a research goal (for example, Theology for Missionaries and Notre-Dame, or Gunpowder for Musketeers) and let the steps pick themselves.</li>
+            <li><b>Shields up.</b> Once a rival has the bomb (☢ in Diplomacy), build Missile Shields in your capital and your biggest cities.</li>
+            <li><b>Race smart.</b> Build Spaceports in your two best production cities so the ship's parts go up side by side, and keep a strong garrison in the capital until the ship lands.</li>
+          </ul>
+        </section>
+
+        <section id="saves" tabindex="-1">
+          <h2>Saves &amp; settings</h2>
+          <ul>
+            <li>The game autosaves every time you end a turn. The menu (<kbd>Esc</kbd>) offers <b>Continue</b> and three manual save slots.</li>
+            <li>Saves live in your browser's local storage (keys starting with <code>stratagem:</code>), so they stay with that browser and that site.</li>
+            <li>Games saved by older versions load and are brought up to date: they gain faiths and run on to <span data-const="END_YEAR">2050</span>.</li>
+            <li>The game runs entirely in your browser. To run it yourself, see the project's README (<code>npm install</code>, then <code>npm run dev</code>).</li>
+          </ul>
+          <p class="back"><a href="./" class="play">Back to the game ▸</a></p>
+        </section>
+      </main>
+    </div>
+    <p id="sort-status" class="visually-hidden" role="status"></p>
+    <script type="module" src="/src/guide/guide.ts"></script>
+  </body>
+</html>
