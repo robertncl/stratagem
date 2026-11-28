@@ -296,19 +296,36 @@ dialog h1 { font: 600 22px var(--serif); margin: 0 0 10px; }
 #dlg-menu { width: min(860px, 96vw); max-width: 96vw; }
 .menu-actions { display: flex; flex-direction: column; gap: 8px; max-width: 320px; margin: 0 auto; }
 .menu-actions button { padding: 10px; font-size: 15px; }
-.nations { display: grid; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); gap: 8px; margin: 10px 0; }
+.realm-pick { display: grid; grid-template-columns: 1fr 250px; gap: 14px; margin: 10px 0; align-items: start; }
+.nations { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 8px; }
 .nation {
   text-align: left;
-  padding: 10px;
+  padding: 6px 10px 6px 6px;
   display: flex;
-  flex-direction: column;
-  gap: 3px;
+  align-items: center;
+  gap: 10px;
   border-width: 1px;
   border-left-width: 5px;
 }
+.nation > span { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.nation .portrait { flex: none; }
 .nation.on { background: #3a3524; border-color: var(--gold-bright); }
 .nation b { font: 600 15px var(--serif); }
 .nation small { color: var(--muted); font-size: 12px; }
+.realm-detail { background: rgb(255 255 255 / 0.03); border: 1px solid var(--line); border-radius: var(--radius); padding: 12px; text-align: center; }
+.realm-detail .portrait { display: block; margin: 0 auto 6px; filter: drop-shadow(0 4px 10px rgb(0 0 0 / 0.5)); }
+.realm-detail h2 { font: 600 20px var(--serif); color: var(--gold-bright); margin: 0; }
+.leader-title { font: italic 13px var(--serif); color: var(--muted); }
+.leader-bio { font-size: 13px; margin: 8px 0; text-align: left; }
+.realm-detail dl { display: grid; grid-template-columns: auto 1fr; gap: 3px 10px; margin: 0; font-size: 12.5px; text-align: left; }
+.realm-detail dt { color: var(--muted); }
+.realm-detail dd { margin: 0; }
+.realm-cell { display: inline-flex; align-items: center; gap: 6px; vertical-align: middle; }
+.realm-cell .portrait { flex: none; }
+@media (max-width: 760px) {
+  .realm-pick { grid-template-columns: 1fr; }
+  .realm-detail { order: -1; }
+}
 .opts { display: flex; gap: 16px; align-items: center; flex-wrap: wrap; margin: 8px 0; }
 .opts label { display: flex; gap: 6px; align-items: center; }
 select, input[type='number'] { font: inherit; background: #23262d; color: var(--text); border: 1px solid var(--line); border-radius: 4px; padding: 4px 6px; }

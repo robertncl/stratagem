@@ -10,6 +10,8 @@ import { buildCost, buildName, computeCityYields, effectiveProd } from '../core/
 import type { Difficulty } from '../core/types';
 import { AUTOSAVE, info, SLOTS } from './storage';
 import { faithIcon } from './render/faith';
+import { leaderPortrait } from './render/portraits';
+import { TECHS } from '../core/data/techs';
 import { DISSENT_PROD_PCT, HOLY_CITY, RELIGION_LIST, RELIGIONS } from '../core/data/religions';
 
 export const esc = (s: string) => s.replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]!);
@@ -157,11 +159,14 @@ function showNewGame(h: MenuHandlers, inGame: boolean) {
   let chosen = 'france';
   body.innerHTML = `
     <p class="muted" style="text-align:center;margin:0">Choose a realm. The rest of Europe will be led by the computer.</p>
-    <div class="nations">
-      ${MAJOR_NATIONS.map(
-        (n) => `<button class="nation ${n.id === chosen ? 'on' : ''}" data-nation="${n.id}" style="border-left-color:${n.color}">
-          <b>${esc(n.name)}</b><small>${esc(n.ruler)} · ${esc(n.capital.name)}</small><small>${esc(n.traitText)}</small></button>`,
-      ).join('')}
+    <div class="realm-pick">
+      <div class="nations" role="radiogroup" aria-label="Realm">
+        ${MAJOR_NATIONS.map(
+          (n) => `<button class="nation ${n.id === chosen ? 'on' : ''}" data-nation="${n.id}" role="radio" aria-checked="${n.id === chosen}" style="border-left-color:${n.color}">
+            ${leaderPortrait(n.id, 46)}<span><b>${esc(n.name)}</b><small>${esc(n.leader.name)} · ${esc(n.capital.name)}</small></span></button>`,
+        ).join('')}
+      </div>
+      <aside class="realm-detail" id="ng-detail" aria-live="polite"></aside>
     </div>
     <div class="opts">
       <label>Difficulty <select id="ng-diff"><option value="easy">Easy</option><option value="normal" selected>Normal</option><option value="hard">Hard</option></select></label>
@@ -169,12 +174,31 @@ function showNewGame(h: MenuHandlers, inGame: boolean) {
       <label>Seed <input id="ng-seed" type="number" placeholder="random" style="width:110px"></label>
     </div>
     <div class="row-end"><button data-act="back">Back</button><button class="primary" data-act="start">Begin the reign</button></div>`;
+  const detail = () => {
+    const n = MAJOR_NATIONS.find((x) => x.id === chosen)!;
+    $('ng-detail').innerHTML = `
+      ${leaderPortrait(n.id, 150)}
+      <h2>${esc(n.leader.name)}</h2>
+      <div class="leader-title">${esc(n.leader.title)} · ${esc(n.leader.years)}</div>
+      <p class="leader-bio">${esc(n.leader.bio)}</p>
+      <dl>
+        <dt>Realm</dt><dd><span class="swatch" style="background:${n.color}"></span> ${esc(n.name)}</dd>
+        <dt>Capital</dt><dd>${esc(n.capital.name)}</dd>
+        <dt>Trait</dt><dd>${esc(n.traitText.replace(/, starts with .*$/, '.'))}</dd>
+        <dt>Starts with</dt><dd>${n.startTechs.map((t) => esc(TECHS[t].name)).join(', ')}</dd>
+      </dl>`;
+  };
+  detail();
   body.onclick = (e) => {
     const el = e.target as HTMLElement;
     const n = el.closest<HTMLElement>('[data-nation]');
     if (n) {
       chosen = n.dataset.nation!;
-      body.querySelectorAll('.nation').forEach((b) => b.classList.toggle('on', (b as HTMLElement).dataset.nation === chosen));
+      body.querySelectorAll<HTMLElement>('.nation').forEach((b) => {
+        b.classList.toggle('on', b.dataset.nation === chosen);
+        b.setAttribute('aria-checked', String(b.dataset.nation === chosen));
+      });
+      detail();
       return;
     }
     if (el.closest('[data-act="back"]')) showMainMenu(h, inGame);
@@ -257,7 +281,7 @@ export function showDiplomacy(g: Game, h: DiploHandlers) {
         ? `<button data-peace="${pid}">Propose peace</button>`
         : `<button class="danger" data-war="${pid}" ${g.canDeclareWar(me, pid) ? '' : 'disabled'}>Declare war</button>`;
     return `<tr class="${isMe ? 'me' : ''}">
-      <td><span class="swatch" style="background:${p.color}"></span> ${esc(p.name)}${p.ruler ? ` <span class="muted">· ${esc(p.ruler)}</span>` : ''}</td>
+      <td><span class="realm-cell">${p.isMinor ? `<span class="swatch" style="background:${p.color}"></span>` : leaderPortrait(p.nation, 26)} <span>${esc(p.name)}${p.ruler ? ` <span class="muted">· ${esc(p.ruler)}</span>` : ''}</span></span></td>
       <td>${status} ${treaty}</td>
       <td>${p.religion ? `${faithIcon(p.religion, 14)} ${RELIGIONS[p.religion].adjective}` : ''}</td>
       <td class="num">${g.citiesOf(pid).length}</td>
