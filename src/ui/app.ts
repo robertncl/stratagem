@@ -39,6 +39,7 @@ import {
 } from './dialogs';
 import { CityTileInfo, Renderer, START_ZOOM, textColorFor } from './renderer';
 import * as storage from './storage';
+import { Tutorial } from './tutorial';
 
 const FOCUS_LABEL: Record<CityFocus, string> = { balanced: 'Balanced', food: 'Food', production: 'Production', gold: 'Gold' };
 
@@ -60,10 +61,12 @@ export class App {
   private toastTimer = 0;
   private researchPrompted = -1;
   private bound = false;
+  private tutorial: Tutorial | null = null;
 
   // ------------------------------------------------------------ lifecycle
 
-  start(game: Game) {
+  start(game: Game, opts: { tutorial?: boolean } = {}) {
+    this.tutorial?.close(false);
     this.unsubscribe?.();
     this.game = game;
     game.ai = runAI;
@@ -85,10 +88,26 @@ export class App {
     this.renderLog();
     this.nextUnit(false);
     this.refresh();
-    if (game.s.turn === 1) {
+    if (opts.tutorial) this.startTutorial();
+    else if (game.s.turn === 1) {
       this.toast(`${game.player(game.humanId).ruler} rules ${game.player(game.humanId).name}. Choose a research path and expand your realm.`, 6000);
     }
     if (game.s.winner) this.gameOver();
+  }
+
+  private startTutorial() {
+    const t = new Tutorial({
+      game: this.game,
+      openCity: () => this.cityPanel,
+      centerOn: (tile) => this.renderer.centerOn(tile),
+      refresh: () => this.refresh(),
+      toast: (text, ms) => this.toast(text, ms),
+    });
+    t.onClose = () => {
+      if (this.tutorial === t) this.tutorial = null;
+    };
+    this.tutorial = t;
+    this.refresh();
   }
 
   private get me() {
@@ -99,6 +118,7 @@ export class App {
     showMainMenu(
       {
         newGame: (nation, difficulty, seed, reveal) => this.onNewGame?.(nation, difficulty, seed, reveal),
+        tutorial: () => this.onTutorial?.(),
         load: (key) => {
           const g = storage.load(key);
           if (!g) return this.toast('That save could not be loaded.');
@@ -115,6 +135,7 @@ export class App {
   }
 
   onNewGame?: (nation: string, difficulty: 'easy' | 'normal' | 'hard', seed: number | undefined, reveal: boolean) => void;
+  onTutorial?: () => void;
 
   // ---------------------------------------------------------------- input
 
@@ -612,6 +633,7 @@ export class App {
     this.renderCityPanel();
     this.renderEndTurn();
     this.requestRender();
+    this.tutorial?.update();
   }
 
   /** Tiles of the open city (if it is ours), for the worked-tile overlay. */
@@ -636,6 +658,7 @@ export class App {
         attackable: this.attackable,
         path: this.hoverPath,
         cityTiles: this.openCityTiles(),
+        marker: this.tutorial?.marker,
       });
       this.renderer.drawMinimap(this.minimap);
     });

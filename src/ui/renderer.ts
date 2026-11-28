@@ -58,6 +58,8 @@ export interface Overlay {
   path: PathStep[] | null;
   /** tiles of the open city, with what each yields and whether it is worked */
   cityTiles: CityTileInfo[] | null;
+  /** a tile the tutorial points at */
+  marker?: number;
 }
 
 function shade(hex: string, f: number): string {
@@ -359,6 +361,32 @@ export class Renderer {
       this.hexPath(ctx, this.centers[ov.selectedTile][0], this.centers[ov.selectedTile][1], HEX - 2);
       ctx.strokeStyle = '#ffd86b';
       ctx.lineWidth = 3;
+      ctx.stroke();
+    }
+    if (ov.marker !== undefined && ov.marker >= 0) {
+      const [mx, my] = this.centers[ov.marker];
+      ctx.beginPath();
+      this.hexPath(ctx, mx, my, HEX - 5);
+      ctx.setLineDash([8, 5]);
+      ctx.strokeStyle = '#8fe3ff';
+      ctx.lineWidth = 3.5;
+      ctx.stroke();
+      ctx.setLineDash([]);
+      // an arrow pointing down at the tile
+      const top = my - HEX * 1.25;
+      ctx.beginPath();
+      ctx.moveTo(mx, top + 16);
+      ctx.lineTo(mx - 9, top + 4);
+      ctx.lineTo(mx - 3.5, top + 4);
+      ctx.lineTo(mx - 3.5, top - 8);
+      ctx.lineTo(mx + 3.5, top - 8);
+      ctx.lineTo(mx + 3.5, top + 4);
+      ctx.lineTo(mx + 9, top + 4);
+      ctx.closePath();
+      ctx.fillStyle = '#8fe3ff';
+      ctx.strokeStyle = 'rgba(10,20,30,0.85)';
+      ctx.lineWidth = 2;
+      ctx.fill();
       ctx.stroke();
     }
 
