@@ -551,11 +551,53 @@ export class Game {
     return true;
   }
 
+  /** Techs still to learn on the way to `goal` (ending with it), prerequisites first. */
+  techPath(pid: number, goal: string): string[] {
+    const known = this.player(pid).techs;
+    const out: string[] = [];
+    const seen = new Set<string>();
+    const visit = (id: string) => {
+      if (seen.has(id) || known.includes(id)) return;
+      seen.add(id);
+      for (const r of TECHS[id].prereqs) visit(r);
+      out.push(id);
+    };
+    visit(goal);
+    return out;
+  }
+
+  /**
+   * Work toward a distant tech: research switches to a step on its path
+   * (unless it is already on one) and moves on by itself as each step is learned.
+   */
+  setResearchGoal(pid: number, goal: string | null) {
+    const p = this.player(pid);
+    if (!goal || p.techs.includes(goal)) {
+      p.researchGoal = null;
+      return;
+    }
+    p.researchGoal = goal;
+    const path = this.techPath(pid, goal);
+    if (!p.research || !path.includes(p.research)) p.research = this.nextOnPath(pid);
+  }
+
+  /** The cheapest tech on the way to the research goal that can be studied now. */
+  private nextOnPath(pid: number): string | null {
+    const goal = this.player(pid).researchGoal;
+    if (!goal) return null;
+    const avail = new Set(this.availableTechs(pid));
+    const steps = this.techPath(pid, goal).filter((t) => avail.has(t));
+    steps.sort((a, b) => TECHS[a].cost - TECHS[b].cost);
+    return steps[0] ?? null;
+  }
+
   grantTech(pid: number, tech: string) {
     const p = this.player(pid);
     if (p.techs.includes(tech)) return;
     p.techs.push(tech);
     if (p.research === tech) p.research = null;
+    if (p.researchGoal && p.techs.includes(p.researchGoal)) p.researchGoal = null;
+    if (!p.research && p.researchGoal) p.research = this.nextOnPath(pid);
     if (!p.isMinor) this.log('tech', `${p.name} discovers ${TECHS[tech].name}.`, [pid]);
     onTechDiscovered(this, pid, tech);
     if (tech === 'enlightenment' && !p.isMinor && !this.s.winner) this.s.winner = { player: pid, kind: 'enlightenment' };
