@@ -301,10 +301,10 @@ export function showDiplomacy(g: Game, h: DiploHandlers) {
         : `<button class="danger" data-war="${pid}" ${g.canDeclareWar(me, pid) ? '' : 'disabled'}>Declare war</button>`;
     return `<tr class="${isMe ? 'me' : ''}">
       <td><span class="swatch" style="background:${p.color}"></span> ${esc(p.name)}${p.ruler ? ` <span class="muted">· ${esc(p.ruler)}</span>` : ''}</td>
-      <td>${status} ${treaty}${p.projects?.includes('manhattanProject') ? ' <span class="neg" title="Has developed the bomb">☢ bomb</span>' : ''}</td>
+      <td>${status} ${treaty}</td>
       <td>${p.religion ? `${faithIcon(p.religion, 14)} ${RELIGIONS[p.religion].adjective}` : ''}</td>
       <td class="num">${g.citiesOf(pid).length}</td>
-      <td class="num">${g.militaryStrength(pid)}</td>
+      <td class="num">${p.projects?.includes('manhattanProject') ? '<span class="neg" title="Has developed the bomb">☢</span> ' : ''}${g.militaryStrength(pid)}</td>
       <td class="num">${g.score(pid)}</td>
       <td>${action}</td></tr>`;
   };
