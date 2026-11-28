@@ -25,6 +25,7 @@ import {
 } from './rules/cities';
 import { bestDefender, CombatResult, resolveCombat } from './rules/combat';
 import { DISSENT_UNREST } from './data/religions';
+import { completeProject, onCapitalLost, spaceArrival } from './rules/space';
 import { migrateReligion, onTechDiscovered, preach, seedCityFaith, spreadReligion, syncStateReligion } from './rules/religion';
 import { enterKind, findPath, isWaterTile, moveCost, ALL_MOVES, terrainAllowed } from './rules/movement';
 import type { BuildItem, City, CityFocus, GameState, LogEntry, LogKind, Player, Relation, Unit } from './types';
@@ -59,6 +60,8 @@ export class Game {
     this.visible = new Uint8Array(state.map.tiles.length);
     this.rebuildCaches();
     if (!state.religions) migrateReligion(this);
+    // saves from before the Space Age ended in 1800; they now run on to 2050
+    if (state.maxTurns === 200) state.maxTurns = 325;
     this.refreshVisibility();
   }
 
@@ -486,7 +489,10 @@ export class Game {
       for (const c of this.citiesOf(newOwner)) c.isCapital = false;
       city.isCapital = true;
     }
-    if (wasCapital) this.reassignCapital(old);
+    if (wasCapital) {
+      this.reassignCapital(old);
+      onCapitalLost(this, old);
+    }
     if (!this.capitalOf(newOwner)) this.reassignCapital(newOwner);
     syncStateReligion(this, old);
     syncStateReligion(this, newOwner);
@@ -600,7 +606,7 @@ export class Game {
     if (!p.research && p.researchGoal) p.research = this.nextOnPath(pid);
     if (!p.isMinor) this.log('tech', `${p.name} discovers ${TECHS[tech].name}.`, [pid]);
     onTechDiscovered(this, pid, tech);
-    if (tech === 'enlightenment' && !p.isMinor && !this.s.winner) this.s.winner = { player: pid, kind: 'enlightenment' };
+    if (tech === 'satellites' && p.explored) p.explored.fill(1);
     if (p.isHuman) this.refreshVisibility();
   }
 
@@ -712,7 +718,7 @@ export class Game {
     }
     if (!canBuild(this, city, item)) {
       // e.g. a wonder completed elsewhere: keep the production for the next item
-      if (p.isHuman && item.kind === 'building' && BUILDINGS[item.id].wonder) {
+      if (p.isHuman && item.kind === 'building' && (BUILDINGS[item.id].wonder || BUILDINGS[item.id].project)) {
         this.log('wonder', `${city.name} can no longer build ${BUILDINGS[item.id].name}.`, [city.owner], city.tile);
       }
       city.build = null;
@@ -730,6 +736,9 @@ export class Game {
       if (item.id === 'settler') city.pop--;
       if (p.isHuman) this.log('city', `${city.name} trains a new ${UNITS[item.id].name}.`, [city.owner], city.tile);
       city.build = null;
+    } else if (BUILDINGS[item.id].project) {
+      completeProject(this, city, item.id);
+      city.build = null;
     } else {
       city.buildings.push(item.id);
       const b = BUILDINGS[item.id];
@@ -739,7 +748,8 @@ export class Game {
       } else if (p.isHuman) this.log('city', `${city.name} completes the ${b.name}.`, [city.owner], city.tile);
       city.build = null;
     }
-    city.prod = Math.min(city.prod, 30);
+    // a little overflow carries over; late-game cities keep up to a turn's worth
+    city.prod = Math.min(city.prod, Math.max(30, prod));
   }
 
   // --------------------------------------------------------------- victory
@@ -779,6 +789,11 @@ export class Game {
         this.s.winner = { player: owner, kind: 'domination' };
         return;
       }
+    }
+    const arrived = spaceArrival(this);
+    if (arrived !== null) {
+      this.s.winner = { player: arrived, kind: 'space' };
+      return;
     }
     if (this.s.turn > this.s.maxTurns) {
       const best = alive.sort((a, b) => this.score(b.id) - this.score(a.id))[0];

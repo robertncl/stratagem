@@ -1,6 +1,6 @@
 # Stratagem
 
-A turn-based 4X strategy game for the browser, set in Western Europe in 1400 AD.
+A turn-based 4X strategy game for the browser, set in Western Europe from 1400 AD to the Space Age.
 Pick one of eight great powers, then explore, expand, exploit and exterminate against computer-controlled rivals and 29 independent states.
 
 ## Play
@@ -38,15 +38,19 @@ npm run preview    # serves dist/ at http://localhost:4173
 - **Map.** About 4,600 hexes (58 × 80, each about 40 km across), generated from real geography: coastlines from Ireland to the Balkans and Tunis, the Alps, Pyrenees and Apennines, 26 rivers (they act as roads and add gold), forests, marshes and resources. New cities take the name of the nearest real town.
 - **Nations.** England, France, Castile, Portugal, the Holy Roman Empire, Burgundy, Venice and the Kalmar Union. Each starts at its historical capital with its own trait and starting tech, and is led by a representative historic figure, whose portrait appears on the realm selection screen and in diplomacy: Elizabeth I, Louis XIV, Isabella I, Henry the Navigator, Charles V, Philip the Good, Doge Francesco Foscari and Margaret I. Scotland, Aragon, the Papal States, the Hanseatic League, the Hafsids and two dozen more are independent states you can conquer.
 - **Economy.** Each citizen works one tile within two hexes of its city, on land the city has claimed. Cities pick the tiles themselves, guided by a focus you set in the city panel (balanced, food, production or gold), and give up output for food rather than starve when they can. Opening a city outlines its worked tiles on the map and shows each tile's yields. Cities grow on food, build with production, earn gold and science, and push their borders out with culture. Gold pays unit and building upkeep and can rush-buy production.
-- **Research.** 26 technologies over six eras, from Pottery to the Enlightenment. On the research screen (`T`), click an available technology to study it, or a locked one to make it your **goal**: research then picks each step on the way by itself, and the screen numbers the path. Hover a technology to light up everything it still needs and what it leads to. Each city beyond your fourth makes research 4% more expensive. Technologies unlock 17 units (Levy → Cuirassier, plus the Missionary), 15 buildings and 8 world wonders, including Notre-Dame, the Arsenale di Venezia and the Medici Bank.
+- **Research.** 51 technologies over eleven eras: from Pottery through the medieval eras, the Renaissance, the Reformation and the Enlightenment (reached around turn 140 in an all-AI game), then the Industrial, Modern, Atomic and Information eras to the Space Age (Space Flight, Satellites, Robotics, Fusion), reached around turn 280–300. Satellites chart the whole map. On the research screen (`T`), click an available technology to study it, or a locked one to make it your **goal**: research then picks each step on the way by itself, and the screen numbers the path. Hover a technology to light up everything it still needs and what it leads to. Each city beyond your fourth makes research 4% more expensive. Technologies unlock 27 units, 26 buildings, 14 world wonders and 4 national projects:
+  - **Units.** Each line is replaced by its successor: Levy → Spearman → Pikeman (or Swordsman → Man-at-Arms) → Musketeer → Rifleman → Infantry → Mechanized Infantry; Horseman → Knight → Cuirassier → Cavalry → Tank → Modern Armor; Archer → Crossbowman → Gatling Gun → Machine Gun; Catapult → Trebuchet → Cannon → Artillery → Rocket Artillery (range 3). Plus Scouts, Settlers and Missionaries.
+  - **Modern buildings.** Public School, Factory, Railway Station, Hospital, Power Plant, Stock Exchange, Broadcast Tower, Supermarket, Research Lab, Nuclear Plant and Spaceport.
+  - **Wonders.** From Cluny Abbey, Notre-Dame and the Medici Bank to the Royal Society, Crystal Palace, Eiffel Tower, Curie Institute, CERN and the International Space Station.
+  - **National projects.** Built once per realm and kept even if the city falls: the Apollo Program and the colony ship's three parts.
 - **War.** Combat strength takes terrain, fortification, walls, veterancy and unit matchups into account. Pikes beat horse, and siege engines double against cities. Archers and siege engines shoot two tiles without retaliation. To capture a city, kill every defender, then move a melee or mounted unit in. With Sailing, units can embark onto coastal waters, and with Navigation onto the open ocean.
 - **Faith.** Every city follows Catholicism (+2 culture), Islam (+2 science) or, once the first great power learns Printing Press and starts the Reformation in its capital, Protestantism (+2 gold). Your state religion is your capital's; cities of another faith are in dissent (−20% production) and resist longer when conquered. Cities press their faith on others within 6 tiles, more so when large or with a Temple, Cluny Abbey, Notre-Dame or El Escorial, and a city that is outweighed converts. Rome and Tunis are holy cities: +3 gold, +2 culture, extra pressure, and they never convert. With Theology, cities train **Missionaries**, which convert a city of another faith next to them at once (`P`). AIs are readier to make war on realms of another faith.
 - **Diplomacy.** Declare war, sue for peace, and accept or reject AI peace offers. Peace treaties last at least 10 turns.
 - **Victory.** There are four ways to win:
   - Conquest: be the last great power standing.
   - Domination: hold every great power's original capital.
-  - Enlightenment: be first to research it.
-  - Score: have the highest score when turn 200 ends (1800 AD). Score is 8 per city, 3 per population, 5 per tech, 20 per wonder and 1 per 4 tiles of territory.
+  - Space: with Space Flight, build the Apollo Program, then a Spaceport (needs a Factory), then the colony ship's Launch Booster (Space Flight), Orbital Habitat (Robotics) and Fusion Drive (Fusion) in Spaceport cities. The ship launches when the last part is done and lands 10 turns later; the first to land wins. If your capital falls during the flight, the ship is lost and its parts must be built again.
+  - Score: have the highest score when turn 325 ends (2050 AD). Score is 8 per city, 3 per population, 5 per tech, 20 per wonder and 1 per 4 tiles of territory.
 
   You are eliminated, and lose, when your last city falls. Units alone don't keep you in the game.
 - **Saves.** The game autosaves each time you end a turn. The menu has **Continue** (the autosave) and three manual save slots. Saves are kept in the browser's `localStorage` under keys starting with `stratagem:`, so they stay with that browser and site.
@@ -72,7 +76,7 @@ npm run preview    # serves dist/ at http://localhost:4173
 ## Development
 
 ```sh
-npm test           # unit tests plus a full all-AI game (up to 200 turns) with invariant checks
+npm test           # unit tests plus a full all-AI game (up to 200 turns of the 325) with invariant checks
 npm run typecheck
 ```
 

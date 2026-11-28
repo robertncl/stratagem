@@ -9,6 +9,8 @@ import type { Game } from '../core/game';
 import { buildCost, buildName, computeCityYields, effectiveProd } from '../core/rules/cities';
 import type { Difficulty } from '../core/types';
 import { AUTOSAVE, info, SLOTS } from './storage';
+import { FLIGHT_TURNS, spaceStatus } from '../core/rules/space';
+import { MAX_TURNS } from '../core/setup';
 import { faithIcon } from './render/faith';
 import { leaderPortrait } from './render/portraits';
 import { TECHS } from '../core/data/techs';
@@ -217,7 +219,7 @@ function showNewGame(h: MenuHandlers, inGame: boolean) {
 export function unlocksOf(tech: string): string[] {
   const out: string[] = [];
   for (const u of UNIT_LIST) if (u.tech === tech) out.push(u.name);
-  for (const b of BUILDING_LIST) if (b.tech === tech) out.push(b.wonder ? `★ ${b.name}` : b.name);
+  for (const b of BUILDING_LIST) if (b.tech === tech) out.push(b.wonder ? `★ ${b.name}` : b.project ? `◆ ${b.name}` : b.name);
   return out;
 }
 
@@ -373,7 +375,7 @@ export function showEmpire(g: Game, onCity: (id: number) => void) {
     .join('');
   const p = g.player(me);
   $('empire-body').innerHTML = `
-    <p class="muted">${cities.length} cities · ${g.unitsOf(me).length} units · ${p.techs.length} techs · score ${g.score(me)}</p>
+    <p class="muted">${cities.length} cities · ${g.unitsOf(me).length} units · ${p.techs.length} techs · score ${g.score(me)}${spaceStatus(g, me) ? ` · <b class="space">${spaceStatus(g, me)}</b>` : ''}</p>
     <div class="scroll"><table class="grid">
       <tr><th>City</th><th class="num">Pop</th><th class="num">Food</th><th class="num">Prod</th><th class="num">Gold</th><th class="num">Sci</th><th>Building</th><th></th></tr>
       ${rows}
@@ -423,8 +425,8 @@ export function showHelp() {
     <div><h2>Victory</h2><ul>
       <li><b>Conquest</b>: be the last great power standing.</li>
       <li><b>Domination</b>: hold every great power's original capital.</li>
-      <li><b>Enlightenment</b>: be first to research it.</li>
-      <li><b>Score</b>: highest score when turn 200 ends (1800 AD).</li>
+      <li><b>Space</b>: with <b>Space Flight</b>, build the Apollo Program, then a Spaceport and the three parts of a colony ship. The first ship to arrive, ${FLIGHT_TURNS} turns after launch, wins. If your capital falls during the flight, the ship is lost.</li>
+      <li><b>Score</b>: highest score when turn ${MAX_TURNS} ends (2050 AD).</li>
       <li>You are out of the game when your last city falls.</li>
     </ul></div>
   </div>`;
@@ -437,7 +439,7 @@ export function showGameOver(g: Game, onNew: () => void, onContinue: () => void)
   const w = g.s.winner!;
   const me = g.humanId;
   const won = w.player === me;
-  const kinds = { conquest: 'Conquest', domination: 'Domination', enlightenment: 'Enlightenment', score: 'Score' };
+  const kinds = { conquest: 'Conquest', domination: 'Domination', enlightenment: 'Enlightenment', score: 'Score', space: 'Space' };
   $('over-title').textContent = won ? 'Victory' : 'Defeat';
   const winner = w.player >= 0 ? g.player(w.player) : null;
   const ranking = g

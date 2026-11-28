@@ -49,6 +49,10 @@ export const C = {
   ox: '#8c6a48',
   canvas: '#e6dcc0',
   habit: '#5a4330',
+  olive: '#5a6142',
+  sand: '#8c876a',
+  gunmetal: '#3b3e42',
+  tyre: '#242322',
 } as const;
 
 /** Darker or lighter version of a #rrggbb colour. */
@@ -163,8 +167,8 @@ export function pennant(team: string, height: number, at: V3 = [0, 0, 0], flag =
 
 // -------------------------------------------------------------- people
 
-export type Head = 'bare' | 'hood' | 'cap' | 'kettle' | 'helm' | 'greathelm' | 'morion' | 'hat' | 'cowl';
-export type RightHand = 'none' | 'spear' | 'pike' | 'sword' | 'pitchfork' | 'musket' | 'staff' | 'lance' | 'torch' | 'cross';
+export type Head = 'bare' | 'hood' | 'cap' | 'kettle' | 'helm' | 'greathelm' | 'morion' | 'hat' | 'cowl' | 'shako' | 'steelhelmet';
+export type RightHand = 'none' | 'spear' | 'pike' | 'sword' | 'pitchfork' | 'musket' | 'staff' | 'lance' | 'torch' | 'cross' | 'rifle' | 'sabre';
 export type LeftHand = 'none' | 'round' | 'heater' | 'pavise' | 'bow' | 'crossbow' | 'bundle' | 'book';
 
 export interface FigureOpts {
@@ -255,6 +259,17 @@ export function figure(o: FigureOpts): THREE.Group {
       parts.push(ball(1.95, mat('#4a5a3a'), [0, 14.0, -0.3], [1, 1.05, 1], 1));
       parts.push(cone(1.1, 2.0, mat('#4a5a3a'), [0, 14.2, -1.8], [-1.7, 0, 0]));
       break;
+    case 'shako':
+      parts.push(cyl(1.7, 1.85, 3.4, mat(tone(o.team, 0.55)), [0, 14.0, 0], undefined, 10));
+      parts.push(cyl(1.75, 1.75, 0.5, mat(C.gold, 0.5), [0, 17.2, 0], undefined, 10));
+      parts.push(box(2.6, 0.3, 1.4, mat(C.dark), [0, 14.1, 1.6], [0.2, 0, 0]));
+      parts.push(ball(0.7, mat(C.linen), [0, 18.2, 0.6], [0.8, 1.4, 0.8], 0));
+      break;
+    case 'steelhelmet':
+      parts.push(ball(1.9, mat(C.olive, 0.3), [0, 14.6, 0], [1.05, 0.72, 1.1], 1));
+      parts.push(cyl(2.7, 2.7, 0.25, mat(C.olive, 0.3), [0, 14.3, 0], undefined, 12));
+      parts.push(cyl(1.95, 1.95, 0.35, team, [0, 14.55, 0], undefined, 12));
+      break;
     case 'cowl':
       parts.push(ball(1.95, mat(C.habit), [0, 14.0, -0.35], [1, 1.05, 1], 1));
       parts.push(cone(1.2, 2.4, mat(C.habit), [0, 13.2, -1.9], [-2.2, 0, 0]));
@@ -326,6 +341,16 @@ export function figure(o: FigureOpts): THREE.Group {
       break;
     case 'torch':
       parts.push(rod(0.3, 6, shaft, [hand[0], hand[1] + 2, hand[2]]));
+      break;
+    case 'rifle':
+      // held across the chest at port arms, bayonet up
+      parts.push(rod(0.28, 11, mat(C.woodDark), [hand[0] - 1.6, hand[1] + 2.2, hand[2] + 0.4], [0, 0, 0.6]));
+      parts.push(rod(0.18, 6, mat(C.dark, 0.6), [hand[0] - 3.6, hand[1] + 5.2, hand[2] + 0.4], [0, 0, 0.6]));
+      parts.push(cone(0.22, 2.4, mat(C.steel, 1), [hand[0] - 5.0, hand[1] + 7.4, hand[2] + 0.4], [0, 0, 0.6], 4));
+      break;
+    case 'sabre':
+      parts.push(box(0.35, 7, 0.9, mat(C.steel, 1), [hand[0] + 0.6, hand[1] + 4.2, hand[2] + 1.2], [0.5, 0, -0.15]));
+      parts.push(box(1.6, 0.4, 0.6, mat(C.gold, 0.6), [hand[0] + 0.2, hand[1] + 0.8, hand[2] + 0.2]));
       break;
     case 'cross': {
       // processional cross: a tall staff with a gilded cross on top

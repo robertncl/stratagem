@@ -28,6 +28,9 @@ interface Ctx {
 }
 
 const MAX_PATH_NODES = 2500;
+const SPACE_TECHS = ['spaceFlight', 'satellites', 'robotics', 'fusion'];
+/** Space race builds, in order: the program, a Spaceport, then the ship. */
+const SPACE_BUILDS = ['apolloProgram', 'spaceport', 'launchBooster', 'orbitalHabitat', 'fusionDrive'];
 
 export function runAI(g: Game, pid: number) {
   const p = g.player(pid);
@@ -220,7 +223,7 @@ function research(ctx: Ctx) {
     let s = t.cost * g.rng.range(0.75, 1.25);
     if (militaryTechs.has(id)) s /= 1 + p.aggression * 0.6;
     if (id === 'sailing' && ctx.cities.some((c) => isCoastal(g, c.tile))) s *= 0.8;
-    if (id === 'enlightenment') s *= 0.5;
+    if (SPACE_TECHS.includes(id)) s *= 0.7;
     if (s < bestScore) {
       bestScore = s;
       best = id;
@@ -664,6 +667,21 @@ function chooseBuild(ctx: Ctx, city: City, defenders: number, desired: number): 
     if (u) return u;
   }
 
+  // the space race, run from the realm's best workshop
+  if (canBuild(g, city, { kind: 'building', id: 'apolloProgram' }) || g.player(pid).projects?.includes('apolloProgram')) {
+    // the two best workshops each get a Spaceport, so ship parts go up side by side
+    const top = [...ctx.cities].sort((a, b) => computeCityYields(g, b).prod - computeCityYields(g, a).prod).slice(0, 2);
+    if (top.includes(city) || city.buildings.includes('spaceport')) {
+      for (const id of SPACE_BUILDS) {
+        if (id === 'apolloProgram' && city !== top[0]) continue;
+        const item: BuildItem = { kind: 'building', id };
+        if (!canBuild(g, city, item)) continue;
+        if (ctx.cities.some((c) => c !== city && c.build?.kind === 'building' && c.build.id === id)) continue;
+        return item;
+      }
+    }
+  }
+
   // wonders in productive cities
   if (yields.prod >= 9 && g.rng.chance(0.35)) {
     const wonders = availableBuilds(g, city).filter(
@@ -690,6 +708,16 @@ function chooseBuild(ctx: Ctx, city: City, defenders: number, desired: number): 
     ['printingHouse', true],
     ['observatory', true],
     ['arsenal', atWar],
+    ['publicSchool', true],
+    ['factory', true],
+    ['railwayStation', true],
+    ['hospital', city.pop >= 6],
+    ['powerPlant', true],
+    ['stockExchange', true],
+    ['researchLab', true],
+    ['supermarket', city.pop >= 8],
+    ['broadcastTower', city.pop >= 8],
+    ['nuclearPlant', true],
   ];
   const peaceTarget = Math.ceil(ctx.cities.length * 1.4 + p.aggression * 2);
   if (military < peaceTarget * 0.7) {
