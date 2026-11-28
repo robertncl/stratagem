@@ -103,6 +103,7 @@ export function showMainMenu(h: MenuHandlers, inGame: boolean) {
       <button data-act="tutorial">Tutorial <small class="muted">· learn to play as France</small></button>
       <button data-act="loadmenu">Load Game</button>
       ${inGame ? `<button data-act="savemenu">Save Game</button>` : ''}
+      <a class="menu-link" href="guide.html" target="_blank" rel="noopener">Game Guide ↗</a>
     </div>`;
   const startTutorial = () => {
     closeDialog('dlg-menu');
@@ -395,6 +396,7 @@ export function showEmpire(g: Game, onCity: (id: number) => void) {
 
 export function showHelp() {
   $('help-body').innerHTML = `
+  <p class="help-guide">This is the short version. The <a href="guide.html" target="_blank" rel="noopener">full game guide ↗</a> covers every rule, unit, building and tech in detail.</p>
   <div class="help-cols">
     <div><h2>Controls</h2><ul>
       <li><b>Left-click</b> a unit or city to select it.</li>
