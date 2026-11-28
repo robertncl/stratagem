@@ -42,7 +42,13 @@ npm run preview    # serves dist/ at http://localhost:4173
   - **Units.** Each line is replaced by its successor: Levy → Spearman → Pikeman (or Swordsman → Man-at-Arms) → Musketeer → Rifleman → Infantry → Mechanized Infantry; Horseman → Knight → Cuirassier → Cavalry → Tank → Modern Armor; Archer → Crossbowman → Gatling Gun → Machine Gun; Catapult → Trebuchet → Cannon → Artillery → Rocket Artillery (range 3). Plus Scouts, Settlers and Missionaries.
   - **Modern buildings.** Public School, Factory, Railway Station, Hospital, Power Plant, Stock Exchange, Broadcast Tower, Supermarket, Research Lab, Nuclear Plant and Spaceport.
   - **Wonders.** From Cluny Abbey, Notre-Dame and the Medici Bank to the Royal Society, Crystal Palace, Eiffel Tower, Curie Institute, CERN and the International Space Station.
-  - **National projects.** Built once per realm and kept even if the city falls: the Apollo Program and the colony ship's three parts.
+  - **National projects.** Built once per realm and kept even if the city falls: the Manhattan Project, the Apollo Program and the colony ship's three parts.
+- **Super weapons.** With Nuclear Fission, the Manhattan Project develops the bomb. After that, cities can build **Atomic Bombs** (range 10, blast radius 1) and, with Rocketry, **Nuclear Missiles** (range 24, blast radius 2). A weapon waits in its city until you select it, press `L` and click a target; the blast is previewed in red, and you confirm the launch.
+  - Every unit in the blast dies, yours included. Cities lose most of their people (60% at ground zero) and many buildings.
+  - Land in the blast is left in fallout and yields nothing for 20 turns.
+  - Striking a realm you are at peace with means war (not allowed during a peace treaty), and AIs are readier to make war on any realm that has used the bomb.
+  - A **Missile Shield** (Satellites) shoots down 3 in 4 strikes aimed within 3 tiles of its city.
+  - AIs develop the bomb once a rival has it or they are at war with a great power, keep up to two weapons, and launch at most one every 5 turns. They only strike great powers they've been at war with for a while, never where the blast would hit their own cities or drag in another great power, and more readily when they are losing.
 - **War.** Combat strength takes terrain, fortification, walls, veterancy and unit matchups into account. Pikes beat horse, and siege engines double against cities. Archers and siege engines shoot two tiles without retaliation. To capture a city, kill every defender, then move a melee or mounted unit in. With Sailing, units can embark onto coastal waters, and with Navigation onto the open ocean.
 - **Faith.** Every city follows Catholicism (+2 culture), Islam (+2 science) or, once the first great power learns Printing Press and starts the Reformation in its capital, Protestantism (+2 gold). Your state religion is your capital's; cities of another faith are in dissent (−20% production) and resist longer when conquered. Cities press their faith on others within 6 tiles, more so when large or with a Temple, Cluny Abbey, Notre-Dame or El Escorial, and a city that is outweighed converts. Rome and Tunis are holy cities: +3 gold, +2 culture, extra pressure, and they never convert. With Theology, cities train **Missionaries**, which convert a city of another faith next to them at once (`P`). AIs are readier to make war on realms of another faith.
 - **Diplomacy.** Declare war, sue for peace, and accept or reject AI peace offers. Peace treaties last at least 10 turns.
@@ -67,6 +73,7 @@ npm run preview    # serves dist/ at http://localhost:4173
 | `Space` / `N` | Next unit |
 | `F` / `S` / `B` | Fortify / sleep / found city |
 | `P` | Preach (Missionary) |
+| `L` | Launch (Atomic Bomb or Nuclear Missile), then click a target |
 | `C` | Centre on the selected unit |
 | `Del` / `Backspace` | Disband |
 | `Enter` | End turn |
@@ -91,7 +98,7 @@ src/core/            pure game logic: no DOM, runs headless
   map/geography.ts   Western Europe in lon/lat: coasts, ranges, rivers, towns
   map/mapgen.ts      rasterises geography onto the hex grid
   data/              terrain, units, buildings, techs, nations, religions
-  rules/             movement + A*, combat, city economy, religion
+  rules/             movement + A*, combat, city economy, religion, space race, nuclear weapons
   game.ts            Game: state, caches, actions, turn cycle, victory
   setup.ts           new-game creation
   ai/ai.ts           computer players

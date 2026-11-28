@@ -1,4 +1,5 @@
-export type UnitClass = 'civilian' | 'recon' | 'melee' | 'ranged' | 'mounted' | 'siege';
+/** missile: a super weapon that never fights, moves or defends; it is launched (see rules/nuclear.ts) */
+export type UnitClass = 'civilian' | 'recon' | 'melee' | 'ranged' | 'mounted' | 'siege' | 'missile';
 
 export interface UnitDef {
   id: string;
@@ -21,6 +22,10 @@ export interface UnitDef {
   vsCity?: number;
   /** unit ids this one replaces in build lists */
   replaces?: string[];
+  /** national project the realm must have finished to build it */
+  needsProject?: string;
+  /** super weapons: how far they can be launched, and the radius of the blast */
+  strike?: { range: number; blast: number };
   description: string;
 }
 
@@ -53,13 +58,17 @@ const list: UnitDef[] = [
   { id: 'rocketArtillery', name: 'Rocket Artillery', abbr: 'RA', cls: 'siege', cost: 320, attack: 15, defense: 20, ranged: 85, range: 3, moves: 2, sight: 2, tech: 'rocketry', vsCity: 1, replaces: ['artillery'], description: 'Truck-mounted rockets that strike 3 tiles away, +100% vs cities.' },
   { id: 'mechInfantry', name: 'Mechanized Infantry', abbr: 'MI', cls: 'melee', cost: 320, attack: 72, defense: 80, moves: 3, sight: 2, tech: 'mobileTactics', replaces: ['infantry'], description: 'Infantry in armoured carriers.' },
   { id: 'modernArmor', name: 'Modern Armor', abbr: 'MB', cls: 'mounted', cost: 400, attack: 110, defense: 80, moves: 4, sight: 2, tech: 'composites', replaces: ['tank'], description: 'Main battle tank with composite armour.' },
+  // Super weapons
+  { id: 'atomicBomb', name: 'Atomic Bomb', abbr: 'AB', cls: 'missile', cost: 400, attack: 0, defense: 0, moves: 0, sight: 1, tech: 'nuclearFission', needsProject: 'manhattanProject', strike: { range: 10, blast: 1 }, description: 'Delivered by bomber up to 10 tiles away. Destroys every unit within 1 tile, halves the cities it hits and leaves fallout.' },
+  { id: 'nuclearMissile', name: 'Nuclear Missile', abbr: 'NM', cls: 'missile', cost: 650, attack: 0, defense: 0, moves: 0, sight: 1, tech: 'rocketry', needsProject: 'manhattanProject', strike: { range: 24, blast: 2 }, description: 'An ICBM that strikes up to 24 tiles away. Destroys every unit within 2 tiles, guts the cities it hits and leaves fallout.' },
 ];
 
 export const UNITS: Record<string, UnitDef> = Object.fromEntries(list.map((u) => [u.id, u]));
 export const UNIT_LIST = list;
 
+/** Units that fight: not civilians, and not super weapons, which are launched instead. */
 export function isMilitary(def: UnitDef): boolean {
-  return def.cls !== 'civilian';
+  return def.cls !== 'civilian' && def.cls !== 'missile';
 }
 
 export function isRanged(def: UnitDef): boolean {

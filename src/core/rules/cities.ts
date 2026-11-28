@@ -37,6 +37,7 @@ export function tileYield(g: Game, tile: number, city?: City): Yield {
     gold += r.gold;
   }
   if (t.river) gold += 1;
+  if (t.fallout) return { food: 0, prod: 0, gold: 0 };
   if (def.water && city) for (const b of city.buildings) food += BUILDINGS[b].effects.waterFood ?? 0;
   return { food, prod, gold };
 }
@@ -233,6 +234,7 @@ export function canBuild(g: Game, city: City, item: BuildItem): boolean {
     if (!def) return false;
     if (def.tech && !g.hasTech(pid, def.tech)) return false;
     if (def.id === 'settler' && g.player(pid).isMinor) return false;
+    if (def.needsProject && !(g.player(pid).projects ?? []).includes(def.needsProject)) return false;
     // missionaries preach the faith of the city that trains them
     if (def.id === 'missionary' && (g.player(pid).isMinor || !city.religion)) return false;
     // hide units replaced by something we can build

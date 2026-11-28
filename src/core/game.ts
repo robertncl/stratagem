@@ -26,6 +26,7 @@ import {
 import { bestDefender, CombatResult, resolveCombat } from './rules/combat';
 import { DISSENT_UNREST } from './data/religions';
 import { completeProject, onCapitalLost, spaceArrival } from './rules/space';
+import { Blast, decayFallout, launch } from './rules/nuclear';
 import { migrateReligion, onTechDiscovered, preach, seedCityFaith, spreadReligion, syncStateReligion } from './rules/religion';
 import { enterKind, findPath, isWaterTile, moveCost, ALL_MOVES, terrainAllowed } from './rules/movement';
 import type { BuildItem, City, CityFocus, GameState, LogEntry, LogKind, Player, Relation, Unit } from './types';
@@ -53,6 +54,8 @@ export class Game {
   private cityIndex = new Map<number, City>();
   /** tiles currently visible to the human player (not serialised) */
   visible: Uint8Array;
+  /** nuclear strikes since the UI last looked (not serialised) */
+  blasts: Blast[] = [];
 
   constructor(state: GameState) {
     this.s = state;
@@ -378,6 +381,11 @@ export class Game {
     this.removeUnit(u);
   }
 
+  /** Launch a super weapon at a tile. */
+  launch(u: Unit, tile: number): Blast | null {
+    return launch(this, u, tile);
+  }
+
   /** A missionary converts a city in or next to its tile. */
   preach(u: Unit, city: City): boolean {
     return preach(this, u, city);
@@ -622,6 +630,7 @@ export class Game {
     }
     for (const p of this.s.players) if (p.alive) this.processPlayer(p.id);
     spreadReligion(this);
+    decayFallout(this);
     this.s.turn++;
     this.checkVictory();
     // human units continue multi-turn moves

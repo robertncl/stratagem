@@ -27,6 +27,8 @@ export function completeProject(g: Game, city: City, id: string) {
       p.spaceship = { launched: g.s.turn, arrives: g.s.turn + FLIGHT_TURNS };
       g.log('victory', `${p.name} launches its colony ship from ${city.name}! It reaches its new world in ${FLIGHT_TURNS} turns, unless ${g.capitalOf(p.id)?.name ?? 'its capital'} falls first.`, [], city.tile);
     }
+  } else if (id === 'manhattanProject') {
+    g.log('wonder', `☢ ${p.name} completes the Manhattan Project in ${city.name}: it can now build the bomb.`, [p.id], city.tile);
   } else {
     g.log('wonder', `${p.name} completes the ${b.name}.`, [p.id], city.tile);
   }

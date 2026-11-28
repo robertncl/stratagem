@@ -227,6 +227,19 @@ const line = (ctx: Ctx, pts: number[]) => {
 };
 
 const EMBLEMS: Record<string, Emblem> = {
+  nuke(ctx) {
+    for (let k = 0; k < 3; k++) {
+      const a = -Math.PI / 2 + (k * Math.PI * 2) / 3;
+      ctx.beginPath();
+      ctx.arc(0, 0, 6, a - 0.52, a + 0.52);
+      ctx.arc(0, 0, 1.8, a + 0.52, a - 0.52, true);
+      ctx.closePath();
+      ctx.fill();
+    }
+    ctx.beginPath();
+    ctx.arc(0, 0, 1.1, 0, Math.PI * 2);
+    ctx.fill();
+  },
   tank(ctx) {
     ctx.beginPath();
     ctx.roundRect(-6, 1, 12, 4.4, 2.2);
@@ -395,6 +408,8 @@ const UNIT_EMBLEM: Record<string, string> = {
   machineGun: 'gatling',
   artillery: 'cannon',
   rocketArtillery: 'cannon',
+  atomicBomb: 'nuke',
+  nuclearMissile: 'nuke',
   scout: 'eye',
   levy: 'pitchfork',
   spearman: 'spear',
