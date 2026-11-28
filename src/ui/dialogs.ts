@@ -10,6 +10,7 @@ import { buildCost, buildName, computeCityYields, effectiveProd } from '../core/
 import type { Difficulty } from '../core/types';
 import { AUTOSAVE, info, SLOTS } from './storage';
 import { FLIGHT_TURNS, spaceStatus } from '../core/rules/space';
+import { FALLOUT_TURNS, SHIELD_CHANCE, SHIELD_RANGE } from '../core/rules/nuclear';
 import { MAX_TURNS } from '../core/setup';
 import { faithIcon } from './render/faith';
 import { leaderPortrait } from './render/portraits';
@@ -327,7 +328,7 @@ export function showDiplomacy(g: Game, h: DiploHandlers) {
       <td>${status} ${treaty}</td>
       <td>${p.religion ? `${faithIcon(p.religion, 14)} ${RELIGIONS[p.religion].adjective}` : ''}</td>
       <td class="num">${g.citiesOf(pid).length}</td>
-      <td class="num">${g.militaryStrength(pid)}</td>
+      <td class="num">${p.projects?.includes('manhattanProject') ? '<span class="neg" title="Has developed the bomb">☢</span> ' : ''}${g.militaryStrength(pid)}</td>
       <td class="num">${g.score(pid)}</td>
       <td>${action}</td></tr>`;
   };
@@ -399,7 +400,7 @@ export function showHelp() {
       <li><b>Left-click</b> a unit or city to select it.</li>
       <li><b>Right-click</b> (or left-click empty ground while a unit is selected) to move or attack. Hover to preview the path; numbers mark where each turn ends.</li>
       <li><b>Drag</b> to pan, <b>wheel</b> or <kbd>+</kbd>/<kbd>−</kbd> to zoom, arrow keys to scroll.</li>
-      <li><kbd>Space</kbd>/<kbd>N</kbd> next unit · <kbd>F</kbd> fortify · <kbd>S</kbd> sleep · <kbd>B</kbd> found city · <kbd>P</kbd> preach · <kbd>C</kbd> centre · <kbd>Del</kbd> disband</li>
+      <li><kbd>Space</kbd>/<kbd>N</kbd> next unit · <kbd>F</kbd> fortify · <kbd>S</kbd> sleep · <kbd>B</kbd> found city · <kbd>P</kbd> preach · <kbd>L</kbd> launch · <kbd>C</kbd> centre · <kbd>Del</kbd> disband</li>
       <li>Click the minimap or a log entry to jump there.</li>
       <li><kbd>Enter</kbd> end turn · <kbd>T</kbd> research · <kbd>D</kbd> diplomacy · <kbd>E</kbd> empire · <kbd>Esc</kbd> deselect / menu</li>
     </ul></div>
@@ -421,6 +422,12 @@ export function showHelp() {
       <li>Cities press their faith on others within 6 tiles. Size, Temples and some wonders add pressure, and a city that is outweighed converts.</li>
       <li>Holy cities (Rome, Tunis) give +${HOLY_CITY.gold} gold and +${HOLY_CITY.culture} culture, send out +${HOLY_CITY.pressure} pressure and never convert. The first great power to learn <b>Printing Press</b> starts the Reformation in its capital.</li>
       <li>With <b>Theology</b>, cities train <b>Missionaries</b>. Next to or inside a city of another faith, press <kbd>P</kbd> to convert it at once.</li>
+    </ul></div>
+    <div><h2>Super weapons</h2><ul>
+      <li>With <b>Nuclear Fission</b>, build the <b>Manhattan Project</b> to develop the bomb. Then cities can build <b>Atomic Bombs</b> (range 10, blast radius 1) and, with <b>Rocketry</b>, <b>Nuclear Missiles</b> (range 24, blast radius 2).</li>
+      <li>Select one and press <kbd>L</kbd>, then click a target. The blast is previewed in red. Every unit in it dies, yours included, and cities in it lose most of their people and many buildings.</li>
+      <li>Land in the blast yields nothing for ${FALLOUT_TURNS} turns. Striking a realm you are at peace with means war, and other powers will be readier to make war on you.</li>
+      <li>A <b>Missile Shield</b> (Satellites) shoots down ${Math.round(SHIELD_CHANCE * 100)}% of strikes aimed within ${SHIELD_RANGE} tiles of its city.</li>
     </ul></div>
     <div><h2>Victory</h2><ul>
       <li><b>Conquest</b>: be the last great power standing.</li>

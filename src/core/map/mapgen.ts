@@ -14,6 +14,8 @@ export interface Tile {
   owner: number;
   /** id of the city whose borders include this tile, -1 if none */
   city: number;
+  /** turns of nuclear fallout left: the tile yields nothing until it clears */
+  fallout?: number;
 }
 
 export interface GameMap {

@@ -81,12 +81,14 @@ export interface Player {
   religion?: ReligionId;
   /** national projects finished (Apollo Program, colony ship parts) */
   projects?: string[];
+  /** turn of the realm's last nuclear launch */
+  lastLaunch?: number;
   /** colony ship in flight */
   spaceship?: { launched: number; arrives: number } | null;
   /** AI memory: city id it is currently trying to conquer */
   aiTarget?: number;
   /** cumulative stats for the score screen */
-  stats: { citiesFounded: number; citiesCaptured: number; unitsKilled: number; unitsLost: number };
+  stats: { citiesFounded: number; citiesCaptured: number; unitsKilled: number; unitsLost: number; nukesLaunched?: number };
 }
 
 export interface Relation {

@@ -1,7 +1,7 @@
 // 3D models for every unit type, plus the boat units ride in at sea.
 
 import type * as THREE from 'three';
-import { ball, beast, box, C, cyl, figure, FigureOpts, group, mat, pennant, rod, SADDLE_Y, slab, wheel } from './parts';
+import { ball, beast, box, C, cone, cyl, figure, FigureOpts, group, mat, pennant, rod, SADDLE_Y, slab, wheel } from './parts';
 import type { Frame } from './baker';
 
 /** Models face right and a little toward the viewer. */
@@ -318,6 +318,53 @@ function mechInfantry(team: string): THREE.Group {
   return group([apc, soldier]);
 }
 
+/** A fat round bomb on a wheeled cradle, its tail fins in the realm's colour. */
+function atomicBomb(team: string): THREE.Group {
+  const casing = mat('#5b5f4a', 0.5);
+  const fins = mat(team);
+  const parts: THREE.Object3D[] = [
+    box(5.4, 0.8, 9, mat(C.gunmetal), [0, 1.8, 0]),
+    ...[-3.2, 3.2].flatMap((z) => [tyre(0.9, 6.6, [0, 0.9, z])]),
+    box(0.6, 1.6, 0.6, mat(C.gunmetal), [-1.8, 2.8, 0]),
+    box(0.6, 1.6, 0.6, mat(C.gunmetal), [1.8, 2.8, 0]),
+    ball(1, casing, [0, 5.6, 0.6], [3.2, 3.0, 4.4], 2),
+    cyl(1.6, 2.4, 2.4, casing, [0, 5.6, -3.6], [-Math.PI / 2, 0, 0], 10),
+    box(5.6, 5.6, 0.3, fins, [0, 5.6, -6.2]),
+    box(0.3, 5.6, 2.4, fins, [-2.8, 5.6, -5.1]),
+    box(0.3, 5.6, 2.4, fins, [2.8, 5.6, -5.1]),
+    box(5.6, 0.3, 2.4, fins, [0, 8.4, -5.1]),
+    box(5.6, 0.3, 2.4, fins, [0, 2.8, -5.1]),
+    cyl(3.25, 3.25, 0.7, mat('#e0c040'), [0, 5.6, 2.6], [Math.PI / 2, 0, 0], 14),
+  ];
+  const bomb = vehicle(parts, 1);
+  bomb.position.set(-2, 0, -1);
+  return group([bomb, crewman(team, 'steelhelmet', [7, 4.4])]);
+}
+
+/** An ICBM standing on its launch pad beside the erector tower. */
+function nuclearMissile(team: string): THREE.Group {
+  const white = mat('#e6e6df', 0.4);
+  const steel = mat(C.gunmetal, 0.4);
+  const fin: [number, number][] = [[0, 0], [2.6, -1], [2.6, -3.6], [0, -5]];
+  const parts: THREE.Object3D[] = [
+    cyl(7, 7.6, 1.4, mat('#8a8a80'), [0, 0, 0], undefined, 12),
+    cyl(1.7, 1.9, 17, white, [0, 3.2, 0], undefined, 12),
+    cyl(1.72, 1.72, 2.2, mat(team), [0, 13.6, 0], undefined, 12),
+    cone(1.7, 6, mat(C.dark, 0.4), [0, 20.2, 0], undefined, 12),
+    cyl(1.95, 1.95, 1.4, mat(C.dark), [0, 3.2, 0], undefined, 12),
+  ];
+  for (let k = 0; k < 4; k++) {
+    const f = slab('icbmFin', fin, 0.3, mat(team), [0, 8.2, 0], [0, (k * Math.PI) / 2, 0]);
+    f.position.set(Math.sin((k * Math.PI) / 2) * 1.7, 8.2, Math.cos((k * Math.PI) / 2) * 1.7);
+    f.rotation.set(0, (k * Math.PI) / 2 - Math.PI / 2, 0);
+    parts.push(f);
+  }
+  // erector tower
+  for (const [x, z] of [[-5.4, -1.2], [-5.4, 1.2], [-3.4, -1.2], [-3.4, 1.2]] as [number, number][]) parts.push(rod(0.25, 22, steel, [x, 12.4, z], undefined, 4));
+  for (const y of [5, 10, 15, 20]) parts.push(box(2.6, 0.3, 2.8, steel, [-4.4, y, 0]), box(1.6, 0.3, 0.4, steel, [-2.6, y, 0]));
+  return vehicle(parts, 0.9);
+}
+
 const BUILDERS: Record<string, (team: string) => THREE.Object3D> = {
   settler,
   missionary: (team) =>
@@ -351,6 +398,8 @@ const BUILDERS: Record<string, (team: string) => THREE.Object3D> = {
   modernArmor: (team) => tank(team, true),
   rocketArtillery,
   mechInfantry,
+  atomicBomb,
+  nuclearMissile,
 };
 
 /** A cog with a team sail, carrying a small figure of the unit. */

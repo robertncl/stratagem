@@ -68,6 +68,7 @@ const list: BuildingDef[] = [
   { id: 'supermarket', name: 'Supermarket', cost: 240, upkeep: 2, tech: 'refrigeration', effects: { food: 3 }, description: '+3 food' },
   { id: 'researchLab', name: 'Research Lab', cost: 300, upkeep: 3, tech: 'computers', requires: 'university', effects: { sci: 5, sciPct: 0.5 }, description: '+5 science, +50% science' },
   { id: 'nuclearPlant', name: 'Nuclear Plant', cost: 340, upkeep: 3, tech: 'nuclearFission', requires: 'factory', effects: { prod: 5, prodPct: 0.25 }, description: '+5 production, +25% production' },
+  { id: 'missileShield', name: 'Missile Shield', cost: 360, upkeep: 4, tech: 'satellites', effects: {}, description: 'Shoots down 3 in 4 nuclear strikes aimed within 3 tiles of the city' },
   { id: 'spaceport', name: 'Spaceport', cost: 300, upkeep: 4, tech: 'spaceFlight', requires: 'factory', effects: { prod: 2 }, description: 'Builds the parts of the colony ship. +2 production' },
   // Wonders: one per world.
   { id: 'cluny', name: 'Cluny Abbey', cost: 160, upkeep: 0, tech: 'writing', wonder: true, effects: { sci: 4, culture: 4, faith: 2 }, description: '+4 science, +4 culture, +2 faith pressure' },
@@ -84,7 +85,8 @@ const list: BuildingDef[] = [
   { id: 'curieInstitute', name: 'Curie Institute', cost: 1300, upkeep: 0, tech: 'atomicTheory', wonder: true, effects: { sci: 10, sciPct: 0.25 }, description: '+10 science, +25% science' },
   { id: 'cern', name: 'CERN', cost: 1600, upkeep: 0, tech: 'computers', wonder: true, effects: { sci: 15, sciPct: 0.5 }, description: '+15 science, +50% science' },
   { id: 'spaceStation', name: 'International Space Station', cost: 2000, upkeep: 0, tech: 'satellites', wonder: true, effects: { sci: 20, culture: 10 }, description: '+20 science, +10 culture' },
-  // National projects: the space race
+  // National projects: super weapons and the space race
+  { id: 'manhattanProject', name: 'Manhattan Project', cost: 900, upkeep: 0, tech: 'nuclearFission', project: true, effects: {}, description: 'Develops the bomb: lets this realm build Atomic Bombs and, with Rocketry, Nuclear Missiles' },
   { id: 'apolloProgram', name: 'Apollo Program', cost: 800, upkeep: 0, tech: 'spaceFlight', project: true, effects: {}, description: 'Opens the space race: your Spaceports can build the colony ship' },
   { id: 'launchBooster', name: 'Launch Booster', cost: 600, upkeep: 0, tech: 'spaceFlight', project: true, spaceship: true, requires: 'spaceport', needsProject: 'apolloProgram', effects: {}, description: 'Colony ship part 1 of 3: lifts the ship to orbit' },
   { id: 'orbitalHabitat', name: 'Orbital Habitat', cost: 700, upkeep: 0, tech: 'robotics', project: true, spaceship: true, requires: 'spaceport', needsProject: 'apolloProgram', effects: {}, description: 'Colony ship part 2 of 3: keeps the colonists alive' },

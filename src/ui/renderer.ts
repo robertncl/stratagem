@@ -60,6 +60,38 @@ export interface Overlay {
   cityTiles: CityTileInfo[] | null;
   /** a tile the tutorial points at */
   marker?: number;
+  /** tiles a super weapon aimed at the hover tile would hit; ok = it can be launched there */
+  strike?: { tiles: number[]; ok: boolean } | null;
+}
+
+/** A nuclear detonation (or interception) being animated. */
+interface BlastEffect {
+  tile: number;
+  radius: number;
+  intercepted: boolean;
+  start: number;
+}
+
+const BLAST_MS = 1800;
+
+/** The radiation trefoil, centred on (x, y). */
+export function drawTrefoil(ctx: CanvasRenderingContext2D, x: number, y: number, r: number, bg: string, fg: string) {
+  ctx.beginPath();
+  ctx.arc(x, y, r * 1.25, 0, Math.PI * 2);
+  ctx.fillStyle = bg;
+  ctx.fill();
+  ctx.fillStyle = fg;
+  for (let k = 0; k < 3; k++) {
+    const a = -Math.PI / 2 + (k * Math.PI * 2) / 3;
+    ctx.beginPath();
+    ctx.moveTo(x + Math.cos(a - 0.52) * r * 0.3, y + Math.sin(a - 0.52) * r * 0.3);
+    ctx.arc(x, y, r, a - 0.52, a + 0.52);
+    ctx.arc(x, y, r * 0.3, a + 0.52, a - 0.52, true);
+    ctx.fill();
+  }
+  ctx.beginPath();
+  ctx.arc(x, y, r * 0.18, 0, Math.PI * 2);
+  ctx.fill();
 }
 
 function shade(hex: string, f: number): string {
@@ -234,6 +266,68 @@ export class Renderer {
     return pixelToTile(this.game.map, wx, wy, HEX);
   }
 
+  private blastEffects: BlastEffect[] = [];
+
+  /** Start the flash and shockwave of a nuclear blast (or a small burst for an interception). */
+  showBlast(tile: number, radius: number, intercepted: boolean) {
+    this.blastEffects.push({ tile, radius, intercepted, start: performance.now() });
+    this.onNeedsRedraw?.();
+  }
+
+  /** Draw running blast effects in screen space; true while any is still running. */
+  private drawBlasts(): boolean {
+    if (!this.blastEffects.length) return false;
+    const ctx = this.ctx;
+    const now = performance.now();
+    const z = this.camera.zoom;
+    this.blastEffects = this.blastEffects.filter((b) => now - b.start < BLAST_MS);
+    ctx.setTransform(this.dpr, 0, 0, this.dpr, 0, 0);
+    for (const b of this.blastEffects) {
+      const t = (now - b.start) / BLAST_MS;
+      const [x, y0] = this.tileScreenPos(b.tile);
+      const fade = 1 - t;
+      if (b.intercepted) {
+        // shot down high above the target
+        const y = y0 - HEX * z * 2.4;
+        const r = HEX * z * (0.3 + 0.9 * Math.sqrt(t));
+        const gr = ctx.createRadialGradient(x, y, 0, x, y, r);
+        gr.addColorStop(0, `rgba(255,255,230,${fade})`);
+        gr.addColorStop(0.5, `rgba(255,190,90,${0.7 * fade})`);
+        gr.addColorStop(1, 'rgba(255,120,40,0)');
+        ctx.fillStyle = gr;
+        ctx.beginPath();
+        ctx.arc(x, y, r, 0, Math.PI * 2);
+        ctx.fill();
+        continue;
+      }
+      const R = HEX * z * (b.radius + 0.9) * 1.7;
+      // the flash
+      const flash = Math.max(0, 1 - t * 2.2);
+      if (flash > 0) {
+        ctx.fillStyle = `rgba(255,252,235,${0.55 * flash})`;
+        ctx.fillRect(0, 0, this.width, this.height);
+      }
+      // the fireball
+      const fr = R * (0.25 + 0.75 * Math.sqrt(Math.min(1, t * 1.6)));
+      const gr = ctx.createRadialGradient(x, y0, 0, x, y0, fr);
+      gr.addColorStop(0, `rgba(255,255,240,${fade})`);
+      gr.addColorStop(0.35, `rgba(255,210,110,${0.9 * fade})`);
+      gr.addColorStop(0.75, `rgba(230,90,30,${0.6 * fade})`);
+      gr.addColorStop(1, 'rgba(120,40,20,0)');
+      ctx.fillStyle = gr;
+      ctx.beginPath();
+      ctx.arc(x, y0, fr, 0, Math.PI * 2);
+      ctx.fill();
+      // the shockwave
+      ctx.beginPath();
+      ctx.arc(x, y0, R * (0.4 + 1.4 * t), 0, Math.PI * 2);
+      ctx.strokeStyle = `rgba(255,240,210,${0.8 * fade})`;
+      ctx.lineWidth = 3 + 6 * fade;
+      ctx.stroke();
+    }
+    return this.blastEffects.length > 0;
+  }
+
   tileScreenPos(tile: number): [number, number] {
     const [x, y] = this.centers[tile];
     return this.worldToScreen(x, y);
@@ -342,6 +436,24 @@ export class Renderer {
       ctx.fillStyle = 'rgba(255,255,255,0.13)';
       ctx.fill();
     }
+    // nuclear fallout: a sickly tint and the trefoil
+    const fallout = tiles.filter((t) => g.map.tiles[t].fallout && g.isExplored(t));
+    if (fallout.length) {
+      ctx.beginPath();
+      for (const t of fallout) this.hexPath(ctx, this.centers[t][0], this.centers[t][1], HEX - 1);
+      ctx.fillStyle = 'rgba(176,206,52,0.26)';
+      ctx.fill();
+      if (z * this.dpr > 0.45) for (const t of fallout) drawTrefoil(ctx, this.centers[t][0], this.centers[t][1] - HEX * 0.45, HEX * 0.17, 'rgba(40,36,8,0.55)', 'rgba(232,214,74,0.75)');
+    }
+    if (ov.strike && ov.strike.tiles.length) {
+      ctx.beginPath();
+      for (const t of ov.strike.tiles) this.hexPath(ctx, this.centers[t][0], this.centers[t][1], HEX - 2);
+      ctx.fillStyle = ov.strike.ok ? 'rgba(255,70,40,0.32)' : 'rgba(160,160,160,0.25)';
+      ctx.fill();
+      ctx.strokeStyle = ov.strike.ok ? '#ff6a3a' : '#9a9a9a';
+      ctx.lineWidth = 2.5;
+      ctx.stroke();
+    }
     if (ov.attackable.size) {
       ctx.beginPath();
       for (const t of ov.attackable) this.hexPath(ctx, this.centers[t][0], this.centers[t][1], HEX - 3);
@@ -445,7 +557,8 @@ export class Renderer {
       this.drawCityLabel(city.name, city.pop, g.player(city.owner).color, x, y + HEX * 0.66 * z + 4, city.isCapital, city.owner === human, city.religion);
     }
 
-    if (pending || this.spritesPending) this.onNeedsRedraw?.();
+    const animating = this.drawBlasts();
+    if (pending || this.spritesPending || animating) this.onNeedsRedraw?.();
   }
 
   // ======================================================== chunk caching

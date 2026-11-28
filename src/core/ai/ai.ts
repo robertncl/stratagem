@@ -11,6 +11,7 @@ import { availableBuilds, buyCost, canBuild, computeCityYields, isCoastal, tileY
 import { bestDefender, previewCombat } from '../rules/combat';
 import { enterKind, findPath } from '../rules/movement';
 import { cannotPreach, holyReligion } from '../rules/religion';
+import { AI_LAUNCH_COOLDOWN, cannotStrike, nuclearPowers, strikePreview } from '../rules/nuclear';
 import type { BuildItem, City, Player, Unit } from '../types';
 
 interface Ctx {
@@ -52,6 +53,7 @@ export function runAI(g: Game, pid: number) {
   ctx.enemies = g.enemiesOf(pid);
   research(ctx);
   moveUnits(ctx);
+  nuclearStrikes(ctx);
   ctx.cities = g.citiesOf(pid);
   for (const city of ctx.cities) production(ctx, city);
   spendGold(ctx);
@@ -195,7 +197,11 @@ function diplomacy(ctx: Ctx) {
     const needed = other.isMinor ? 1.6 : 1.25;
     if (ratio < needed || ctx.myStrength < 15) continue;
     // humans are slightly more tempting targets on hard, and other faiths always are
-    const bias = (other.isHuman && g.s.difficulty === 'hard' ? 1.2 : 1) * (p.religion && other.religion && other.religion !== p.religion ? 1.15 : 1);
+    const bias =
+      (other.isHuman && g.s.difficulty === 'hard' ? 1.2 : 1) *
+      (p.religion && other.religion && other.religion !== p.religion ? 1.15 : 1) *
+      // realms that have used the bomb make themselves enemies
+      (other.stats.nukesLaunched ? 1.25 : 1);
     if (!best || ratio * bias > best.ratio) best = { id: other.id, ratio: ratio * bias };
   }
   if (best) g.declareWar(pid, best.id);
@@ -533,6 +539,39 @@ function settlerTurn(ctx: Ctx, u: Unit) {
   if (g.unit(u.id) && u.tile === target && u.moves >= 0) g.foundCity(u);
 }
 
+// ------------------------------------------------------------ super weapons
+
+/**
+ * Launch at an enemy great power's city when the war has gone on a while,
+ * the blast spares our own cities and armies, and it would not drag in
+ * another great power. More likely when losing.
+ */
+function nuclearStrikes(ctx: Ctx) {
+  const { g, pid } = ctx;
+  const weapons = g.unitsOf(pid).filter((u) => UNITS[u.type].strike);
+  if (!weapons.length || !ctx.enemies.length) return;
+  if (g.s.turn - (ctx.p.lastLaunch ?? -Infinity) < AI_LAUNCH_COOLDOWN) return;
+  for (const u of weapons) {
+    let best: { tile: number; score: number } | null = null;
+    for (const e of ctx.enemies) {
+      if (g.player(e).isMinor || g.s.turn - g.relation(pid, e).since < 4) continue;
+      const desperate = ctx.myStrength < g.militaryStrength(e) * 1.1;
+      for (const c of g.citiesOf(e)) {
+        if (cannotStrike(g, u, c.tile)) continue;
+        const pv = strikePreview(g, u, c.tile);
+        if (pv.cities.some((x) => x.owner === pid) || pv.ownUnits > 1) continue;
+        if (pv.newWars.some((x) => !g.player(x).isMinor)) continue;
+        const score = pv.otherUnits * 3 + c.pop + (c.isCapital ? 6 : 0) - (pv.shielded ? 8 : 0) + (desperate ? 6 : 0);
+        if (!best || score > best.score) best = { tile: c.tile, score };
+      }
+    }
+    if (best && best.score >= 12 && g.rng.chance(0.35)) {
+      g.launch(u, best.tile);
+      return; // one launch at a time
+    }
+  }
+}
+
 // -------------------------------------------------------------- missionaries
 
 /** Can a missionary of `rel` hope to convert this city (ignoring where it stands)? */
@@ -682,6 +721,23 @@ function chooseBuild(ctx: Ctx, city: City, defenders: number, desired: number): 
     }
   }
 
+  // super weapons: develop the bomb once a rival has it or a great war is on, then keep a couple ready
+  const majorWar = ctx.enemies.some((e) => !g.player(e).isMinor);
+  const manhattan: BuildItem = { kind: 'building', id: 'manhattanProject' };
+  if (
+    canBuild(g, city, manhattan) &&
+    yields.prod >= 20 &&
+    (majorWar || nuclearPowers(g).length > 0 || g.rng.chance(0.05)) &&
+    !ctx.cities.some((c) => c !== city && c.build?.kind === 'building' && c.build.id === manhattan.id)
+  ) {
+    return manhattan;
+  }
+  if (majorWar && g.rng.chance(0.3)) {
+    const stock = allUnits.filter((u) => UNITS[u.type].strike).length + ctx.cities.filter((c) => c.build?.kind === 'unit' && UNITS[c.build.id].strike).length;
+    const weapon = unit(bestBy(buildable(ctx, city, (d) => !!d.strike), (d) => d.strike!.blast * 100 + d.strike!.range));
+    if (stock < 2 && weapon) return weapon;
+  }
+
   // wonders in productive cities
   if (yields.prod >= 9 && g.rng.chance(0.35)) {
     const wonders = availableBuilds(g, city).filter(
@@ -708,6 +764,7 @@ function chooseBuild(ctx: Ctx, city: City, defenders: number, desired: number): 
     ['printingHouse', true],
     ['observatory', true],
     ['arsenal', atWar],
+    ['missileShield', (city.isCapital || city.pop >= 10) && nuclearPowers(g).some((x) => x !== pid)],
     ['publicSchool', true],
     ['factory', true],
     ['railwayStation', true],

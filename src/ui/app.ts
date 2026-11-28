@@ -24,6 +24,7 @@ import { DISSENT_PROD_PCT, RELIGIONS } from '../core/data/religions';
 import { faithShares, faithYields, holyReligion, preachTargets } from '../core/rules/religion';
 import { faithIcon } from './render/faith';
 import { spaceStatus } from '../core/rules/space';
+import { cannotStrike, FALLOUT_TURNS, SHIELD_CHANCE, strikePreview } from '../core/rules/nuclear';
 import type { BuildItem, City, CityFocus, LogEntry, Unit } from '../core/types';
 import {
   $,
@@ -63,6 +64,8 @@ export class App {
   private researchPrompted = -1;
   private bound = false;
   private tutorial: Tutorial | null = null;
+  /** super weapon being aimed (unit id) */
+  private aiming: number | null = null;
 
   // ------------------------------------------------------------ lifecycle
 
@@ -321,6 +324,9 @@ export class App {
       case 'p':
         if (u) this.unitAction('preach');
         break;
+      case 'l':
+        if (u) this.unitAction('aim');
+        break;
       case 'c':
         if (u) this.renderer.centerOn(u.tile);
         break;
@@ -339,7 +345,8 @@ export class App {
         showHelp();
         break;
       case 'Escape':
-        if (this.cityPanel !== null) this.closeCityPanel();
+        if (this.aiming !== null) this.aiming = null;
+        else if (this.cityPanel !== null) this.closeCityPanel();
         else if (this.selUnit !== null || this.selTile >= 0) this.deselect();
         else this.menu();
         break;
@@ -363,6 +370,7 @@ export class App {
   }
 
   private deselect() {
+    this.aiming = null;
     this.selUnit = null;
     this.selTile = -1;
     this.reach = null;
@@ -396,6 +404,7 @@ export class App {
   }
 
   private leftClick(tile: number, double: boolean) {
+    if (this.aiming !== null) return void this.tryLaunch(tile);
     const g = this.game;
     const u = this.selectedUnit();
     const own = g.unitsAt(tile).filter((x) => x.owner === this.me);
@@ -432,6 +441,7 @@ export class App {
 
   /** Move / attack order toward a tile. */
   private async order(tile: number) {
+    if (this.aiming !== null) return this.tryLaunch(tile);
     const g = this.game;
     const u = this.selectedUnit();
     if (!u || tile === u.tile) return;
@@ -506,6 +516,12 @@ export class App {
     const u = this.selectedUnit();
     if (!u) return;
     switch (act) {
+      case 'aim':
+        if (!UNITS[u.type].strike) return;
+        this.aiming = this.aiming === u.id ? null : u.id;
+        if (this.aiming !== null) this.toast(`Choose a target within ${UNITS[u.type].strike!.range} tiles. Esc cancels.`);
+        this.refresh();
+        return;
       case 'preach': {
         if (u.type !== 'missionary') return;
         const targets = preachTargets(g, u);
@@ -580,6 +596,7 @@ export class App {
     const parts: string[] = [];
     parts.push(`<h4>${TERRAIN[t.t].name}${t.river ? ' · River' : ''}${t.res ? ` · ${RESOURCES[t.res].name}` : ''}</h4>`);
     parts.push(`<div><span class="ico food"></span> ${y.food} &nbsp;<span class="ico prod"></span> ${y.prod} &nbsp;<span class="ico gold"></span> ${y.gold}${TERRAIN[t.t].defense ? ` &nbsp;· defence ${TERRAIN[t.t].defense > 0 ? '+' : ''}${Math.round(TERRAIN[t.t].defense * 100)}%` : ''}</div>`);
+    if (t.fallout) parts.push(`<div class="neg">☢ Fallout: no yields for ${t.fallout} more turn${t.fallout > 1 ? 's' : ''}</div>`);
     if (t.owner >= 0) parts.push(`<div class="muted">${esc(g.player(t.owner).name)}</div>`);
     const city = g.cityAt(tile);
     if (city) parts.push(`<div><b>${esc(city.name)}</b> (size ${city.pop})${city.religion ? ` · ${faithIcon(city.religion, 12)} ${RELIGIONS[city.religion].adjective}` : ''}</div>`);
@@ -595,7 +612,9 @@ export class App {
       }
     }
     const sel = this.selectedUnit();
-    if (sel && this.attackable.has(tile)) {
+    const aimed = this.aiming !== null ? g.unit(this.aiming) : undefined;
+    if (aimed) parts.push(`<div class="odds">${this.strikeSummary(aimed, tile)}</div>`);
+    else if (sel && this.attackable.has(tile)) {
       const def = bestDefender(g, tile, sel);
       if (def) {
         const ranged = isRanged(UNITS[sel.type]);
@@ -660,6 +679,7 @@ export class App {
         path: this.hoverPath,
         cityTiles: this.openCityTiles(),
         marker: this.tutorial?.marker,
+        strike: this.strikeOverlay(),
       });
       this.renderer.drawMinimap(this.minimap);
     });
@@ -725,6 +745,13 @@ export class App {
     const city = g.cityAt(u.tile);
     const actions: string[] = [];
     if (u.type === 'settler') actions.push(`<button class="primary" data-act="found" ${g.canFoundCity(u) ? `title="${esc(g.canFoundCity(u)!)}"` : ''}>Found city <kbd>B</kbd></button>`);
+    if (def.strike) {
+      actions.push(
+        this.aiming === u.id
+          ? `<button class="danger" data-act="aim">Cancel launch <kbd>Esc</kbd></button>`
+          : `<button class="danger" data-act="aim">☢ Launch <kbd>L</kbd></button>`,
+      );
+    }
     if (u.type === 'missionary') {
       for (const c of preachTargets(g, u)) actions.push(`<button class="primary" data-act="preach" data-city="${c.id}">Preach in ${esc(c.name)} <kbd>P</kbd></button>`);
     }
@@ -749,7 +776,7 @@ export class App {
       </div>
       <div class="actions">${actions.join('')}</div>
       ${stack.length > 1 ? `<div class="stack">${stack.map((x) => `<button data-unit="${x.id}" class="${x.id === u.id ? 'on' : ''}">${UNITS[x.type].abbr} ${x.hp < 100 ? x.hp : ''}${x.moves > 0 ? '' : ' ·'}</button>`).join('')}</div>` : ''}
-      <div class="hint">${u.type === 'missionary' ? 'Right-click to move. Stand next to or inside a city of another faith, then preach.' : `Right-click to move or attack. ${isRanged(def) ? 'Ranged units strike from two tiles away.' : ''}`}</div>`;
+      <div class="hint">${def.strike ? (this.aiming === u.id ? `<b class="neg">Aiming:</b> click a tile within ${def.strike.range} tiles. Everything within ${def.strike.blast} tile${def.strike.blast > 1 ? 's' : ''} of it is destroyed.` : `Waits in its city until launched, up to ${def.strike.range} tiles away.`) : u.type === 'missionary' ? 'Right-click to move. Stand next to or inside a city of another faith, then preach.' : `Right-click to move or attack. ${isRanged(def) ? 'Ranged units strike from two tiles away.' : ''}`}</div>`;
     el.hidden = false;
   }
 
@@ -981,6 +1008,7 @@ export class App {
   private async afterTurn() {
     const g = this.game;
     this.renderLog();
+    this.showBlasts();
     if (this.checkWinner()) return;
     // peace offers from AIs
     for (const prop of [...g.s.proposals]) {
@@ -999,6 +1027,69 @@ export class App {
       this.researchPrompted = g.s.turn;
       this.openTech();
     }
+  }
+
+  // ---------------------------------------------------------- super weapons
+
+  private strikeOverlay(): { tiles: number[]; ok: boolean } | null {
+    const u = this.aiming !== null ? this.game.unit(this.aiming) : undefined;
+    if (!u || this.hover < 0) return null;
+    return { tiles: strikePreview(this.game, u, this.hover).tiles, ok: !cannotStrike(this.game, u, this.hover) };
+  }
+
+  /** What a strike on `tile` would do, as HTML. */
+  private strikeSummary(u: Unit, tile: number): string {
+    const g = this.game;
+    const why = cannotStrike(g, u, tile);
+    if (why) return `<span class="neg">${esc(why)}</span>`;
+    const pv = strikePreview(g, u, tile);
+    const lines = [`<b>☢ ${UNITS[u.type].name}</b>`];
+    lines.push(`Destroys ${pv.otherUnits} enemy unit${pv.otherUnits === 1 ? '' : 's'}${pv.ownUnits ? ` and <span class="neg">${pv.ownUnits} of yours</span>` : ''}`);
+    for (const c of pv.cities) lines.push(`${c.owner === this.me ? '<span class="neg">' : ''}${esc(c.name)} (size ${c.pop}) is devastated${c.owner === this.me ? '</span>' : ''}`);
+    lines.push(`Fallout for ${FALLOUT_TURNS} turns`);
+    if (pv.newWars.length) lines.push(`<span class="neg">War with ${pv.newWars.map((p) => esc(g.player(p).name)).join(', ')}</span>`);
+    if (pv.shielded) lines.push(`<span class="neg">A Missile Shield covers it: ${Math.round(SHIELD_CHANCE * 100)}% chance it is shot down</span>`);
+    return lines.join('<br>');
+  }
+
+  private async tryLaunch(tile: number) {
+    const g = this.game;
+    const u = this.aiming !== null ? g.unit(this.aiming) : undefined;
+    if (!u || tile < 0) return;
+    const why = cannotStrike(g, u, tile);
+    if (why) return this.toast(why);
+    const pv = strikePreview(g, u, tile);
+    const where = g.cityAt(tile)?.name ?? 'this tile';
+    const text = [
+      `Every unit within ${UNITS[u.type].strike!.blast} tile${UNITS[u.type].strike!.blast > 1 ? 's' : ''} dies: ${pv.otherUnits} enemy${pv.ownUnits ? ` and ${pv.ownUnits} of yours` : ''}.`,
+      pv.cities.length ? `${pv.cities.map((c) => c.name).join(', ')} will be devastated.` : '',
+      `The land stays poisoned for ${FALLOUT_TURNS} turns, and the world will remember who used the bomb.`,
+      pv.newWars.length ? `This means war with ${pv.newWars.map((p) => g.player(p).name).join(', ')}.` : '',
+    ]
+      .filter(Boolean)
+      .join(' ');
+    const ok = await confirmDialog(`Launch the ${UNITS[u.type].name} at ${where}?`, text, 'Launch');
+    if (!ok) return;
+    this.aiming = null;
+    g.launch(u, tile);
+    this.showBlasts();
+    this.renderLog();
+    this.afterAction();
+  }
+
+  /** Animate strikes the player can see, and warn when one hit the player. */
+  private showBlasts() {
+    const g = this.game;
+    for (const b of g.blasts) {
+      if (!g.isExplored(b.tile)) continue;
+      this.renderer.showBlast(b.tile, b.radius, b.intercepted);
+      const mine = g.cityAt(b.tile)?.owner === this.me || g.map.tiles[b.tile].owner === this.me;
+      if (mine && b.by !== this.me) {
+        this.renderer.centerOn(b.tile);
+        this.toast(b.intercepted ? `Your Missile Shield shot down a ${g.player(b.by).adjective} strike!` : `☢ ${g.player(b.by).name} has struck ${g.cityAt(b.tile)?.name ?? 'your land'} with a nuclear weapon!`, 6000);
+      }
+    }
+    g.blasts = [];
   }
 
   private checkWinner(): boolean {
