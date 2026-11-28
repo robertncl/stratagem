@@ -12,7 +12,9 @@ npm install
 npm run dev        # then open http://localhost:5173
 ```
 
-The game opens at the main menu. Choose **New Game**, pick a realm, and set the options:
+The game opens at the main menu. New to the game? Choose **Tutorial**. It starts a game as France on easy, and a coach card walks you through your first turns: choosing research, setting production, exploring with the Scout, fortifying, ending the turn, and founding a second city on a marked site. Then it covers city focus, faith, war and diplomacy, and the ways to win. Each task step moves on by itself once you've done it. You can skip a step or close the coach at any time.
+
+Otherwise, choose **New Game**, pick a realm, and set the options:
 
 | Option | Effect |
 | --- | --- |
@@ -95,6 +97,7 @@ src/ui/
   render/            terrain textures, flat icons, and three/: 3D models
                      (three.js, loaded lazily) baked into sprites for the map
   dialogs.ts         menu, new game, research, diplomacy, empire, help, game over
+  tutorial.ts        the guided first game's coach card and its steps
   storage.ts         localStorage save slots
   styles.css
 tests/               Vitest: map, rules, full AI-vs-AI simulation

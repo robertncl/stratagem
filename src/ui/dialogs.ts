@@ -81,6 +81,7 @@ export function confirmDialog(title: string, text: string, yes = 'Confirm', dang
 
 export interface MenuHandlers {
   newGame(nation: string, difficulty: Difficulty, seed: number | undefined, reveal: boolean): void;
+  tutorial(): void;
   load(key: string): void;
   save(key: string): void;
   resume(): void;
@@ -94,9 +95,14 @@ export function showMainMenu(h: MenuHandlers, inGame: boolean) {
       ${inGame ? `<button class="primary" data-act="resume">Resume</button>` : ''}
       ${!inGame && auto ? `<button class="primary" data-act="continue">Continue — ${esc(auto.nation)}, ${auto.year} AD</button>` : ''}
       <button data-act="new" ${!inGame && !auto ? 'class="primary"' : ''}>New Game</button>
+      <button data-act="tutorial">Tutorial <small class="muted">· learn to play as France</small></button>
       <button data-act="loadmenu">Load Game</button>
       ${inGame ? `<button data-act="savemenu">Save Game</button>` : ''}
     </div>`;
+  const startTutorial = () => {
+    closeDialog('dlg-menu');
+    h.tutorial();
+  };
   body.onclick = (e) => {
     const act = (e.target as HTMLElement).closest<HTMLElement>('[data-act]')?.dataset.act;
     if (act === 'resume') {
@@ -104,6 +110,10 @@ export function showMainMenu(h: MenuHandlers, inGame: boolean) {
       h.resume();
     } else if (act === 'continue') h.load(AUTOSAVE);
     else if (act === 'new') showNewGame(h, inGame);
+    else if (act === 'tutorial') {
+      if (inGame) void confirmDialog('Start the tutorial?', 'The current game will be left behind. Save it first if you want to come back to it.', 'Start tutorial', false).then((ok) => ok && startTutorial());
+      else startTutorial();
+    }
     else if (act === 'loadmenu') showSlots(h, 'load', inGame);
     else if (act === 'savemenu') showSlots(h, 'save', inGame);
   };
