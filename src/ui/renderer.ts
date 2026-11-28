@@ -22,6 +22,8 @@ import { fbm, hash2 } from '../core/rng';
 import type { PathStep } from '../core/rules/movement';
 import type { City, Unit } from '../core/types';
 import { drawResourceBadge, drawUnitEmblem, shieldPath } from './render/icons';
+import { drawFaithBadge } from './render/faith';
+import type { ReligionId } from '../core/data/religions';
 import { terrainPatterns } from './render/textures';
 
 type Models = typeof import('./render/three/models');
@@ -412,7 +414,7 @@ export class Renderer {
     ctx.setTransform(this.dpr, 0, 0, this.dpr, 0, 0);
     for (const city of cities) {
       const [x, y] = this.tileScreenPos(city.tile);
-      this.drawCityLabel(city.name, city.pop, g.player(city.owner).color, x, y + HEX * 0.66 * z + 4, city.isCapital, city.owner === human);
+      this.drawCityLabel(city.name, city.pop, g.player(city.owner).color, x, y + HEX * 0.66 * z + 4, city.isCapital, city.owner === human, city.religion);
     }
 
     if (pending || this.spritesPending) this.onNeedsRedraw?.();
@@ -1588,14 +1590,15 @@ export class Renderer {
     ctx.stroke();
   }
 
-  private drawCityLabel(name: string, pop: number, color: string, x: number, y: number, capital: boolean, mine: boolean) {
+  private drawCityLabel(name: string, pop: number, color: string, x: number, y: number, capital: boolean, mine: boolean, faith?: ReligionId) {
     const ctx = this.ctx;
     const z = this.camera.zoom * S;
     const size = Math.round(Math.max(10, Math.min(14, 11 * Math.sqrt(z))));
     ctx.font = `${mine ? 600 : 500} ${size}px 'Palatino Linotype', Palatino, Georgia, serif`;
     const tw = ctx.measureText(name).width;
     const badge = size + 4;
-    const w = tw + badge + 12;
+    const faithW = faith ? size + 2 : 0;
+    const w = tw + badge + 12 + faithW;
     const h = size + 7;
     const lx = x - w / 2;
     ctx.shadowColor = 'rgba(0,0,0,0.5)';
@@ -1622,6 +1625,7 @@ export class Renderer {
     ctx.font = `${mine ? 600 : 500} ${size}px 'Palatino Linotype', Palatino, Georgia, serif`;
     ctx.textAlign = 'left';
     ctx.fillText(name, lx + badge + 7, y + h / 2 + 0.5);
+    if (faith) drawFaithBadge(ctx, faith, lx + w - 4 - (size - 2) / 2, y + h / 2, (size - 2) / 2);
   }
 
   private drawUnits(tile: number, units: Unit[], selected: Unit | null) {

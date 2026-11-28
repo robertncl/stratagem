@@ -169,6 +169,8 @@ function cannon(team: string): THREE.Group {
 
 const BUILDERS: Record<string, (team: string) => THREE.Object3D> = {
   settler,
+  missionary: (team) =>
+    squad([[0, 0]], () => group([figure({ team, body: 'robe', head: 'cowl', right: 'cross', left: 'book' })], undefined, undefined, 1.12)),
   scout: (team) =>
     squad([[0, 0]], () => group([figure({ team, body: 'cloak', head: 'hood', right: 'staff' })], undefined, undefined, 1.12)),
   levy: (team) => foot(TRIO, (i) => ({ team, body: 'peasant', head: i === 1 ? 'cap' : 'bare', right: 'pitchfork' })),

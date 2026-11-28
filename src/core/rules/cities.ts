@@ -7,6 +7,7 @@ import { UNITS, UNIT_LIST } from '../data/units';
 import { BUILDING_LIST } from '../data/buildings';
 import { neighbors, tilesInRadius } from '../hex';
 import type { Game } from '../game';
+import { faithYields, inDissent } from './religion';
 import type { BuildItem, City, CityFocus } from '../types';
 
 export const WORK_RADIUS = 2;
@@ -110,7 +111,7 @@ export function difficultyMult(g: Game, pid: number): number {
 }
 
 export function cityEffects(city: City): Required<Omit<BuildingEffects, 'veteran'>> & { veteran: boolean } {
-  const e = { food: 0, prod: 0, gold: 0, sci: 0, culture: 0, prodPct: 0, goldPct: 0, sciPct: 0, defense: 0, waterFood: 0, militaryPct: 0, veteran: false };
+  const e = { food: 0, prod: 0, gold: 0, sci: 0, culture: 0, prodPct: 0, goldPct: 0, sciPct: 0, defense: 0, waterFood: 0, militaryPct: 0, faith: 0, veteran: false };
   for (const id of city.buildings) {
     const b = BUILDINGS[id].effects;
     e.food += b.food ?? 0;
@@ -124,6 +125,7 @@ export function cityEffects(city: City): Required<Omit<BuildingEffects, 'veteran
     e.defense += b.defense ?? 0;
     e.waterFood += b.waterFood ?? 0;
     e.militaryPct += b.militaryPct ?? 0;
+    e.faith += b.faith ?? 0;
     if (b.veteran) e.veteran = true;
   }
   return e;
@@ -142,6 +144,8 @@ export interface CityYields {
   tiles: TileChoice[];
   /** citizens with no tile left to work */
   idle: number;
+  /** the city does not share its owner's state religion */
+  dissent: boolean;
 }
 
 /** Tiles the city could work: its own claimed tiles within the work radius, not occupied by enemies. */
@@ -175,10 +179,11 @@ export function computeCityYields(g: Game, city: City): CityYields {
   food += fx.food;
   food = Math.floor(food * foodMult);
   const mult = difficultyMult(g, city.owner);
-  prod = Math.round((prod + fx.prod) * (1 + fx.prodPct + (traits.prodPct ?? 0)) * mult);
-  gold = Math.round((gold + fx.gold) * (1 + fx.goldPct + (traits.goldPct ?? 0)) * mult);
-  let sci = Math.round((1 + city.pop * 0.6 + fx.sci + (city.isCapital ? 3 : 0)) * (1 + fx.sciPct + (traits.sciPct ?? 0)) * mult);
-  const culture = Math.round((1 + fx.culture + (city.isCapital ? 2 : 0)) * (1 + (traits.culturePct ?? 0)));
+  const faith = faithYields(g, city);
+  prod = Math.round((prod + fx.prod) * Math.max(0.1, 1 + fx.prodPct + (traits.prodPct ?? 0) + faith.prodPct) * mult);
+  gold = Math.round((gold + fx.gold + faith.gold) * (1 + fx.goldPct + (traits.goldPct ?? 0)) * mult);
+  let sci = Math.round((1 + city.pop * 0.6 + fx.sci + faith.sci + (city.isCapital ? 3 : 0)) * (1 + fx.sciPct + (traits.sciPct ?? 0)) * mult);
+  const culture = Math.round((1 + fx.culture + faith.culture + (city.isCapital ? 2 : 0)) * (1 + (traits.culturePct ?? 0)));
   if (city.unrest > 0) {
     prod = 0;
     gold = 0;
@@ -196,6 +201,7 @@ export function computeCityYields(g: Game, city: City): CityYields {
     worked: worked.map((w) => w.t),
     tiles: candidates,
     idle: Math.max(0, city.pop - candidates.length),
+    dissent: inDissent(g, city),
   };
 }
 
@@ -227,6 +233,8 @@ export function canBuild(g: Game, city: City, item: BuildItem): boolean {
     if (!def) return false;
     if (def.tech && !g.hasTech(pid, def.tech)) return false;
     if (def.id === 'settler' && g.player(pid).isMinor) return false;
+    // missionaries preach the faith of the city that trains them
+    if (def.id === 'missionary' && (g.player(pid).isMinor || !city.religion)) return false;
     // hide units replaced by something we can build
     for (const other of UNIT_LIST) {
       if (other.replaces?.includes(def.id) && (!other.tech || g.hasTech(pid, other.tech))) return false;

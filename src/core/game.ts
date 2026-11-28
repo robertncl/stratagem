@@ -24,6 +24,8 @@ import {
   MAX_BORDER_RADIUS,
 } from './rules/cities';
 import { bestDefender, CombatResult, resolveCombat } from './rules/combat';
+import { DISSENT_UNREST } from './data/religions';
+import { migrateReligion, onTechDiscovered, preach, seedCityFaith, spreadReligion, syncStateReligion } from './rules/religion';
 import { enterKind, findPath, isWaterTile, moveCost, ALL_MOVES, terrainAllowed } from './rules/movement';
 import type { BuildItem, City, CityFocus, GameState, LogEntry, LogKind, Player, Relation, Unit } from './types';
 
@@ -56,6 +58,7 @@ export class Game {
     this.rng = new Rng(state.rng);
     this.visible = new Uint8Array(state.map.tiles.length);
     this.rebuildCaches();
+    if (!state.religions) migrateReligion(this);
     this.refreshVisibility();
   }
 
@@ -372,6 +375,11 @@ export class Game {
     this.removeUnit(u);
   }
 
+  /** A missionary converts a city in or next to its tile. */
+  preach(u: Unit, city: City): boolean {
+    return preach(this, u, city);
+  }
+
   // ---------------------------------------------------------------- cities
 
   canFoundCity(u: Unit): string | null {
@@ -411,6 +419,7 @@ export class Game {
       founded: this.s.turn,
       unrest: 0,
     };
+    seedCityFaith(this, city);
     this.s.cities.push(city);
     this.cityIndex.set(city.id, city);
     this.cityByTile.set(tile, city);
@@ -464,7 +473,8 @@ export class Game {
     city.prod = 0;
     city.food = 0;
     city.build = null;
-    city.unrest = 3;
+    // a city of another faith resists its new masters for longer
+    city.unrest = 3 + (city.religion && this.player(newOwner).religion && city.religion !== this.player(newOwner).religion ? DISSENT_UNREST : 0);
     city.buildings = city.buildings.filter((b) => BUILDINGS[b].wonder || this.rng.chance(0.6));
     for (const tile of this.map.tiles) if (tile.city === city.id) tile.owner = newOwner;
     // displaced civilians are lost
@@ -478,6 +488,8 @@ export class Game {
     }
     if (wasCapital) this.reassignCapital(old);
     if (!this.capitalOf(newOwner)) this.reassignCapital(newOwner);
+    syncStateReligion(this, old);
+    syncStateReligion(this, newOwner);
     if (this.citiesOf(old).length === 0) this.eliminate(old, newOwner);
   }
 
@@ -545,6 +557,7 @@ export class Game {
     p.techs.push(tech);
     if (p.research === tech) p.research = null;
     if (!p.isMinor) this.log('tech', `${p.name} discovers ${TECHS[tech].name}.`, [pid]);
+    onTechDiscovered(this, pid, tech);
     if (tech === 'enlightenment' && !p.isMinor && !this.s.winner) this.s.winner = { player: pid, kind: 'enlightenment' };
     if (p.isHuman) this.refreshVisibility();
   }
@@ -560,6 +573,7 @@ export class Game {
       if (this.s.winner) break;
     }
     for (const p of this.s.players) if (p.alive) this.processPlayer(p.id);
+    spreadReligion(this);
     this.s.turn++;
     this.checkVictory();
     // human units continue multi-turn moves
@@ -670,6 +684,7 @@ export class Game {
     if (item.kind === 'unit') {
       const u = this.createUnit(item.id, city.owner, city.tile);
       if (cityEffects(city).veteran && isMilitary(UNITS[u.type])) u.veteran = true;
+      if (u.type === 'missionary') u.religion = city.religion;
       if (item.id === 'settler') city.pop--;
       if (p.isHuman) this.log('city', `${city.name} trains a new ${UNITS[item.id].name}.`, [city.owner], city.tile);
       city.build = null;

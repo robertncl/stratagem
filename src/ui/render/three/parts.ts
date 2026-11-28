@@ -48,6 +48,7 @@ export const C = {
   horseGrey: '#c8c2b8',
   ox: '#8c6a48',
   canvas: '#e6dcc0',
+  habit: '#5a4330',
 } as const;
 
 /** Darker or lighter version of a #rrggbb colour. */
@@ -162,14 +163,14 @@ export function pennant(team: string, height: number, at: V3 = [0, 0, 0], flag =
 
 // -------------------------------------------------------------- people
 
-export type Head = 'bare' | 'hood' | 'cap' | 'kettle' | 'helm' | 'greathelm' | 'morion' | 'hat';
-export type RightHand = 'none' | 'spear' | 'pike' | 'sword' | 'pitchfork' | 'musket' | 'staff' | 'lance' | 'torch';
-export type LeftHand = 'none' | 'round' | 'heater' | 'pavise' | 'bow' | 'crossbow' | 'bundle';
+export type Head = 'bare' | 'hood' | 'cap' | 'kettle' | 'helm' | 'greathelm' | 'morion' | 'hat' | 'cowl';
+export type RightHand = 'none' | 'spear' | 'pike' | 'sword' | 'pitchfork' | 'musket' | 'staff' | 'lance' | 'torch' | 'cross';
+export type LeftHand = 'none' | 'round' | 'heater' | 'pavise' | 'bow' | 'crossbow' | 'bundle' | 'book';
 
 export interface FigureOpts {
   team: string;
-  /** tunic: team-coloured cloth; armour: steel with a team surcoat; coat: long team coat */
-  body?: 'tunic' | 'armour' | 'coat' | 'peasant' | 'cloak';
+  /** tunic: team-coloured cloth; armour: steel with a team surcoat; coat: long team coat; robe: a friar's habit with a team stole */
+  body?: 'tunic' | 'armour' | 'coat' | 'peasant' | 'cloak' | 'robe';
   head?: Head;
   right?: RightHand;
   left?: LeftHand;
@@ -189,8 +190,10 @@ export function figure(o: FigureOpts): THREE.Group {
   const parts: THREE.Object3D[] = [];
   const legMat = body === 'armour' ? armour : body === 'peasant' ? mat(C.cloth) : mat(C.trousers);
 
-  // legs
-  if (o.mounted) {
+  // legs (a habit hides them down to the feet)
+  if (body === 'robe') {
+    for (const s of [-1, 1]) parts.push(box(1.2, 0.8, 2.0, mat(C.leather), [s * 0.9, 0.4, 0.6]));
+  } else if (o.mounted) {
     for (const s of [-1, 1]) {
       parts.push(rod(0.75, 4.6, legMat, [s * 2.0, 5.8, 1.0], [-0.9, 0, s * 0.35]));
       parts.push(box(1.3, 1.6, 2.2, mat(C.boots), [s * 2.4, 3.6, 2.4]));
@@ -203,7 +206,8 @@ export function figure(o: FigureOpts): THREE.Group {
   }
 
   // torso
-  const torsoMat = body === 'armour' ? armour : body === 'peasant' ? mat(C.cloth) : team;
+  const habit = mat(C.habit);
+  const torsoMat = body === 'armour' ? armour : body === 'peasant' ? mat(C.cloth) : body === 'robe' ? habit : team;
   parts.push(cyl(1.95, 2.25, 5.4, torsoMat, [0, 6.4, 0]));
   if (body === 'armour') {
     // team surcoat over the armour, and a skirt below the belt
@@ -212,6 +216,10 @@ export function figure(o: FigureOpts): THREE.Group {
   } else if (body === 'coat') {
     parts.push(cyl(2.3, 3.0, 4.6, team, [0, 3.2, 0]));
     parts.push(box(0.5, 5.2, 0.3, mat(C.linen), [0, 9.0, 2.1]));
+  } else if (body === 'robe') {
+    parts.push(cyl(2.25, 3.1, 6.4, habit, [0, 3.2, 0]));
+    // stole hanging down both sides of the chest
+    for (const s of [-1, 1]) parts.push(box(0.7, 6.8, 0.3, team, [s * 0.75, 7.0, 2.25]));
   } else if (body === 'cloak') {
     parts.push(cone(3.3, 10.2, mat('#4a5a3a'), [0, 1.6, -0.3]));
     parts.push(box(1.8, 4.0, 0.3, team, [0, 8.6, 2.1]));
@@ -220,10 +228,10 @@ export function figure(o: FigureOpts): THREE.Group {
     parts.push(cyl(2.25, 2.7, 2.4, body === 'peasant' ? mat(tone(C.cloth, 0.85)) : team, [0, 4.6, 0]));
     if (body === 'peasant') parts.push(cyl(2.3, 2.3, 0.9, team, [0, 7.4, 0]));
   }
-  parts.push(cyl(2.3, 2.3, 0.6, mat(C.leather), [0, 6.6, 0]));
+  parts.push(cyl(2.3, 2.3, 0.6, mat(body === 'robe' ? C.rope : C.leather), [0, 6.6, 0]));
 
   // shoulders and arms
-  const sleeve = body === 'armour' ? armour : body === 'peasant' ? mat(C.cloth) : body === 'cloak' ? mat('#4a5a3a') : teamDark;
+  const sleeve = body === 'armour' ? armour : body === 'peasant' ? mat(C.cloth) : body === 'cloak' ? mat('#4a5a3a') : body === 'robe' ? habit : teamDark;
   for (const s of [-1, 1]) parts.push(ball(1.0, sleeve, [s * 2.2, 11.2, 0], [1, 1, 1], 0));
   const right = o.right ?? 'none';
   const left = o.left ?? 'none';
@@ -246,6 +254,10 @@ export function figure(o: FigureOpts): THREE.Group {
     case 'hood':
       parts.push(ball(1.95, mat('#4a5a3a'), [0, 14.0, -0.3], [1, 1.05, 1], 1));
       parts.push(cone(1.1, 2.0, mat('#4a5a3a'), [0, 14.2, -1.8], [-1.7, 0, 0]));
+      break;
+    case 'cowl':
+      parts.push(ball(1.95, mat(C.habit), [0, 14.0, -0.35], [1, 1.05, 1], 1));
+      parts.push(cone(1.2, 2.4, mat(C.habit), [0, 13.2, -1.9], [-2.2, 0, 0]));
       break;
     case 'cap':
       parts.push(cyl(1.75, 1.85, 1.0, team, [0, 14.3, 0]));
@@ -315,6 +327,14 @@ export function figure(o: FigureOpts): THREE.Group {
     case 'torch':
       parts.push(rod(0.3, 6, shaft, [hand[0], hand[1] + 2, hand[2]]));
       break;
+    case 'cross': {
+      // processional cross: a tall staff with a gilded cross on top
+      const gilt = mat(C.gold, 0.7);
+      parts.push(rod(0.25, 17, shaft, [hand[0], hand[1] + 3.4, hand[2]]));
+      parts.push(box(0.6, 4.2, 0.6, gilt, [hand[0], hand[1] + 13.4, hand[2]]));
+      parts.push(box(3.0, 0.6, 0.6, gilt, [hand[0], hand[1] + 13.9, hand[2]]));
+      break;
+    }
     case 'none':
       break;
   }
@@ -353,6 +373,10 @@ export function figure(o: FigureOpts): THREE.Group {
       break;
     case 'bundle':
       parts.push(ball(2.4, mat(C.canvas), [0.2, 10.6, -2.6], [1, 1.2, 0.8], 0));
+      break;
+    case 'book':
+      parts.push(box(2.6, 0.7, 2.0, mat('#7a2a22'), [lh[0] + 0.4, lh[1] + 0.6, lh[2] + 0.2], [0.5, 0, 0]));
+      parts.push(box(2.3, 0.75, 1.8, mat(C.linen), [lh[0] + 0.4, lh[1] + 0.62, lh[2] + 0.25], [0.5, 0, 0]));
       break;
     case 'none':
       break;

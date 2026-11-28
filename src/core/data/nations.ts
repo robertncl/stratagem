@@ -1,3 +1,5 @@
+import type { ReligionId } from './religions';
+
 export interface NationTraits {
   prodPct?: number;
   goldPct?: number;
@@ -81,6 +83,8 @@ export interface MinorDef {
   city: { name: string; lon: number; lat: number };
   size: number;
   walls?: boolean;
+  /** faith at the start (default Catholic) */
+  religion?: ReligionId;
 }
 
 export const MINOR_NATIONS: MinorDef[] = [
@@ -88,7 +92,7 @@ export const MINOR_NATIONS: MinorDef[] = [
   { id: 'ireland', name: 'Lordship of Ireland', color: '#4f9a6b', city: { name: 'Dublin', lon: -6.26, lat: 53.35 }, size: 2 },
   { id: 'brittany', name: 'Duchy of Brittany', color: '#8a8a6a', city: { name: 'Nantes', lon: -1.55, lat: 47.22 }, size: 2 },
   { id: 'aragon', name: 'Crown of Aragon', color: '#b8860b', city: { name: 'Barcelona', lon: 2.17, lat: 41.39 }, size: 3, walls: true },
-  { id: 'granada', name: 'Emirate of Granada', color: '#6f8f3f', city: { name: 'Granada', lon: -3.6, lat: 37.18 }, size: 3, walls: true },
+  { id: 'granada', name: 'Emirate of Granada', color: '#6f8f3f', city: { name: 'Granada', lon: -3.6, lat: 37.18 }, size: 3, walls: true, religion: 'islam' },
   { id: 'navarre', name: 'Kingdom of Navarre', color: '#9c6b6b', city: { name: 'Pamplona', lon: -1.64, lat: 42.81 }, size: 2 },
   { id: 'milan', name: 'Duchy of Milan', color: '#6a8fb0', city: { name: 'Milan', lon: 9.19, lat: 45.46 }, size: 3, walls: true },
   { id: 'florence', name: 'Republic of Florence', color: '#b05a5a', city: { name: 'Florence', lon: 11.25, lat: 43.77 }, size: 3 },
@@ -96,9 +100,9 @@ export const MINOR_NATIONS: MinorDef[] = [
   { id: 'naples', name: 'Kingdom of Naples', color: '#7a6aa8', city: { name: 'Naples', lon: 14.27, lat: 40.85 }, size: 3 },
   { id: 'sicily', name: 'Kingdom of Sicily', color: '#a8865a', city: { name: 'Palermo', lon: 13.36, lat: 38.12 }, size: 2 },
   { id: 'genoa', name: 'Republic of Genoa', color: '#a84a6a', city: { name: 'Genoa', lon: 8.93, lat: 44.41 }, size: 2 },
-  { id: 'hafsid', name: 'Hafsid Sultanate', color: '#5a9a8a', city: { name: 'Tunis', lon: 10.18, lat: 36.8 }, size: 3, walls: true },
-  { id: 'zayyanid', name: 'Zayyanid Sultanate', color: '#8aa05a', city: { name: 'Algiers', lon: 3.06, lat: 36.75 }, size: 2 },
-  { id: 'marinid', name: 'Marinid Sultanate', color: '#a0785a', city: { name: 'Tangier', lon: -5.8, lat: 35.77 }, size: 2 },
+  { id: 'hafsid', name: 'Hafsid Sultanate', color: '#5a9a8a', city: { name: 'Tunis', lon: 10.18, lat: 36.8 }, size: 3, walls: true, religion: 'islam' },
+  { id: 'zayyanid', name: 'Zayyanid Sultanate', color: '#8aa05a', city: { name: 'Algiers', lon: 3.06, lat: 36.75 }, size: 2, religion: 'islam' },
+  { id: 'marinid', name: 'Marinid Sultanate', color: '#a0785a', city: { name: 'Tangier', lon: -5.8, lat: 35.77 }, size: 2, religion: 'islam' },
   { id: 'swiss', name: 'Swiss Confederacy', color: '#c05050', city: { name: 'Bern', lon: 7.45, lat: 46.95 }, size: 2, walls: true },
   { id: 'austria', name: 'Duchy of Austria', color: '#c0a0a0', city: { name: 'Vienna', lon: 16.37, lat: 48.21 }, size: 3, walls: true },
   { id: 'bavaria', name: 'Duchy of Bavaria', color: '#6a9ad0', city: { name: 'Munich', lon: 11.58, lat: 48.14 }, size: 2 },
@@ -114,3 +118,8 @@ export const MINOR_NATIONS: MinorDef[] = [
   { id: 'sweden', name: 'Swedish Riksråd', color: '#4a7ac0', city: { name: 'Stockholm', lon: 18.07, lat: 59.33 }, size: 2 },
   { id: 'norway', name: 'Norwegian Realm', color: '#7a9ab0', city: { name: 'Oslo', lon: 10.75, lat: 59.91 }, size: 2 },
 ];
+
+/** Faith a nation follows at the start of the game. */
+export function homeReligion(nation: string): ReligionId {
+  return MINOR_NATIONS.find((m) => m.id === nation)?.religion ?? 'catholic';
+}
